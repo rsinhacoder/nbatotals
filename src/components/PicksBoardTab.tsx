@@ -488,14 +488,14 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                   />
 
                   {/* Main Match Row */}
-                  <div className="p-3.5 sm:p-5 pl-4 sm:pl-6 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                  <div className="p-3.5 sm:p-5 pl-4 sm:pl-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
                     {/* Left: Expanded Logos & Matchup Info */}
-                    <div className="flex items-center gap-3 sm:gap-4 w-full xl:w-auto min-w-0">
+                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 min-w-0">
                       {/* Expanded Team Logos with High-Def Tiles */}
-                      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         {/* Away Logo */}
                         <div
-                          className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white/95 dark:bg-[#131b2e]/90 border border-slate-200/90 dark:border-[#25344f] p-1.5 shadow-sm flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                          className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-white/95 dark:bg-[#131b2e]/90 border border-slate-200/90 dark:border-[#25344f] p-1.5 shadow-xs flex items-center justify-center transition-transform duration-200 group-hover:scale-105 shrink-0"
                           title={away.name}
                         >
                           <img
@@ -507,13 +507,13 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                         </div>
 
                         {/* Centered vs symbol */}
-                        <span className="text-xs font-black font-mono text-slate-400 dark:text-zinc-500 select-none">
+                        <span className="text-xs font-bold font-mono text-slate-400 dark:text-zinc-500 select-none px-0.5">
                           @
                         </span>
 
                         {/* Home Logo */}
                         <div
-                          className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white/95 dark:bg-[#131b2e]/90 border border-slate-200/90 dark:border-[#25344f] p-1.5 shadow-sm flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                          className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-white/95 dark:bg-[#131b2e]/90 border border-slate-200/90 dark:border-[#25344f] p-1.5 shadow-xs flex items-center justify-center transition-transform duration-200 group-hover:scale-105 shrink-0"
                           title={home.name}
                         >
                           <img
@@ -525,30 +525,29 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                         </div>
                       </div>
 
-                      {/* Team Names, Time Badge (NO date tag), and Records */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-black text-slate-900 dark:text-white text-base sm:text-lg lg:text-xl tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {/* Team Names & Subtitle (Time + Records) - Exactly 2 lines, clean and aligned */}
+                      <div className="min-w-0 flex flex-col justify-center">
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-slate-900 dark:text-white text-base sm:text-lg tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors whitespace-nowrap">
                             {away.shortName} <span className="text-slate-400 dark:text-zinc-500 font-normal text-sm">@</span> {home.shortName}
                           </span>
-
-                          {/* Time badge only - Date tag is removed */}
-                          {match.status === 'Live' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse shadow-xs">
+                          {match.status === 'Live' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse shadow-xs shrink-0">
                               <span className="h-1.5 w-1.5 rounded-full bg-white" />
                               LIVE
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-slate-100/90 dark:bg-[#141c2e] text-slate-600 dark:text-zinc-300 border border-slate-200/90 dark:border-[#24334c]">
-                              <Clock className="h-3 w-3 text-slate-400 dark:text-zinc-500" />
-                              {match.time}
-                            </span>
                           )}
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono mt-1 flex items-center gap-2 flex-wrap">
-                          <span>{away.abbreviation} ({match.awayRecord}) • {home.abbreviation} ({match.homeRecord})</span>
-                          <span className="text-xs font-sans font-bold text-blue-600 dark:text-blue-400 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            Match Hub ↗
+
+                        <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono mt-1 flex items-center gap-2 whitespace-nowrap">
+                          <span className="font-semibold text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-slate-400 dark:text-zinc-500" />
+                            {match.time}
+                          </span>
+                          <span className="text-slate-300 dark:text-zinc-600">•</span>
+                          <span>{away.abbreviation} ({match.awayRecord}) vs {home.abbreviation} ({match.homeRecord})</span>
+                          <span className="text-xs font-sans font-bold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline">
+                            Hub ↗
                           </span>
                         </div>
                       </div>
@@ -557,14 +556,14 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                     {/* Middle: The Core Quant Numbers Grid */}
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full xl:w-auto grid grid-cols-3 gap-2 sm:gap-6 bg-gradient-to-b from-slate-100/70 via-slate-50/50 to-slate-100/40 dark:from-[#090f1c]/90 dark:via-[#070b15]/85 dark:to-[#0b1120]/90 border border-slate-200/90 dark:border-[#1e2a42] rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xs backdrop-blur-xs"
+                      className="w-full lg:w-auto grid grid-cols-3 gap-2 sm:gap-4 bg-gradient-to-b from-slate-100/70 via-slate-50/50 to-slate-100/40 dark:from-[#090f1c]/90 dark:via-[#070b15]/85 dark:to-[#0b1120]/90 border border-slate-200/90 dark:border-[#1e2a42] rounded-2xl p-2.5 sm:px-5 sm:py-3 shadow-2xs backdrop-blur-xs shrink-0"
                     >
                       {/* Market Line */}
-                      <div className="text-center">
-                        <div className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                      <div className="text-center px-1 sm:px-2 flex flex-col justify-between">
+                        <div className="h-4 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider whitespace-nowrap">
                           Market Line
                         </div>
-                        <div className="mt-1">
+                        <div className="h-8 sm:h-9 flex items-center justify-center mt-1">
                           {isEditingLine ? (
                             <div className="flex items-center justify-center gap-1">
                               <input
@@ -585,7 +584,7 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                           ) : (
                             <button
                               onClick={(e) => handleStartEditLine(match, e)}
-                              className="font-mono text-lg sm:text-2xl font-black text-slate-900 dark:text-amber-300 hover:text-blue-600 dark:hover:text-amber-200 transition-colors cursor-pointer group flex items-center justify-center gap-1 mx-auto"
+                              className="font-mono text-lg sm:text-2xl font-black text-slate-900 dark:text-amber-300 hover:text-blue-600 dark:hover:text-amber-200 transition-colors cursor-pointer group flex items-center justify-center gap-1"
                               title="Click to edit sportsbook line"
                             >
                               <span>{match.sportsbookLine.toFixed(1)}</span>
@@ -598,22 +597,22 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                       </div>
 
                       {/* Model Projection */}
-                      <div className="text-center border-x border-slate-200/90 dark:border-[#1e273d]">
-                        <div className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                      <div className="text-center border-x border-slate-200/90 dark:border-[#1e273d] px-2 sm:px-4 flex flex-col justify-between">
+                        <div className="h-4 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider whitespace-nowrap">
                           Model Total
                         </div>
-                        <div className="font-mono text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
+                        <div className="h-8 sm:h-9 flex items-center justify-center font-mono text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
                           {match.modelProjectedTotal.toFixed(1)}
                         </div>
                       </div>
 
                       {/* Discrepancy / Edge */}
-                      <div className="text-center">
-                        <div className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                      <div className="text-center px-1 sm:px-2 flex flex-col justify-between">
+                        <div className="h-4 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider whitespace-nowrap">
                           Point Edge
                         </div>
                         <div
-                          className={`font-mono text-lg sm:text-2xl font-black mt-1 ${
+                          className={`h-8 sm:h-9 flex items-center justify-center font-mono text-lg sm:text-2xl font-black mt-1 ${
                             match.edge <= -3.0
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : match.edge >= 3.0
@@ -629,45 +628,45 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                     {/* Right: Sharp Actionable Recommendation & Buttons */}
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full xl:w-auto flex items-center gap-2 sm:gap-2.5 justify-between xl:justify-end flex-wrap"
+                      className="w-full lg:w-auto flex items-center justify-between lg:justify-end gap-2 sm:gap-2.5 shrink-0"
                     >
                       {/* The Primary Pick Verdict Badge */}
                       {isUnder || isLeanUnder ? (
-                        <div className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-teal-500/5 dark:from-emerald-950/80 dark:via-emerald-900/60 dark:to-[#0d2218] border border-emerald-300/80 dark:border-emerald-500/50 text-emerald-900 dark:text-emerald-200 flex items-center gap-2 shadow-2xs">
+                        <div className="h-10 sm:h-11 px-3 sm:px-3.5 rounded-xl bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-teal-500/5 dark:from-emerald-950/80 dark:via-emerald-900/60 dark:to-[#0d2218] border border-emerald-300/80 dark:border-emerald-500/50 text-emerald-900 dark:text-emerald-200 flex items-center gap-2 shadow-2xs shrink-0">
                           <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <div>
-                            <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                          <div className="text-left">
+                            <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 leading-none">
                               {isUnder ? 'HIGH CONVICTION' : 'LEAN'}
                             </div>
-                            <div className="text-xs sm:text-sm font-black font-mono text-emerald-950 dark:text-white whitespace-nowrap">
+                            <div className="text-xs sm:text-sm font-black font-mono text-emerald-950 dark:text-white whitespace-nowrap leading-tight mt-0.5">
                               BET UNDER {match.sportsbookLine}
                             </div>
                           </div>
                         </div>
                       ) : isOver || isLeanOver ? (
-                        <div className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-rose-500/15 via-rose-500/10 to-amber-500/5 dark:from-rose-950/80 dark:via-rose-900/60 dark:to-[#220d14] border border-rose-300/80 dark:border-rose-500/50 text-rose-900 dark:text-rose-200 flex items-center gap-2 shadow-2xs">
+                        <div className="h-10 sm:h-11 px-3 sm:px-3.5 rounded-xl bg-gradient-to-r from-rose-500/15 via-rose-500/10 to-amber-500/5 dark:from-rose-950/80 dark:via-rose-900/60 dark:to-[#220d14] border border-rose-300/80 dark:border-rose-500/50 text-rose-900 dark:text-rose-200 flex items-center gap-2 shadow-2xs shrink-0">
                           <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600 dark:text-rose-400 shrink-0" />
-                          <div>
-                            <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-400">
+                          <div className="text-left">
+                            <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-400 leading-none">
                               {isOver ? 'HIGH CONVICTION' : 'LEAN'}
                             </div>
-                            <div className="text-xs sm:text-sm font-black font-mono text-rose-950 dark:text-white whitespace-nowrap">
+                            <div className="text-xs sm:text-sm font-black font-mono text-rose-950 dark:text-white whitespace-nowrap leading-tight mt-0.5">
                               BET OVER {match.sportsbookLine}
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-100 dark:bg-[#141b2b] border border-slate-200 dark:border-[#222c42] text-slate-700 dark:text-zinc-400">
-                          <div className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider text-slate-500 dark:text-zinc-500">
+                        <div className="h-10 sm:h-11 px-3 sm:px-3.5 rounded-xl bg-slate-100 dark:bg-[#141b2b] border border-slate-200 dark:border-[#222c42] text-slate-700 dark:text-zinc-400 flex flex-col justify-center text-left shrink-0">
+                          <div className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider text-slate-500 dark:text-zinc-500 leading-none">
                             MARKET EFFICIENT
                           </div>
-                          <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-zinc-300 font-mono whitespace-nowrap">
+                          <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-zinc-300 font-mono whitespace-nowrap leading-tight mt-0.5">
                             PASS / FAIR LINE
                           </div>
                         </div>
                       )}
 
-                      <div className="flex items-center gap-1.5 sm:gap-2 ml-auto xl:ml-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         {/* Action Button: Track Bet */}
                         {!isPass && (
                           <button
@@ -675,7 +674,7 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                               e.stopPropagation();
                               onTrackBet(match, match.edge < 0 ? 'UNDER' : 'OVER');
                             }}
-                            className={`px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap ${
+                            className={`h-10 sm:h-11 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap shrink-0 ${
                               isTracked
                                 ? 'bg-slate-100 dark:bg-[#141b2b] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-[#222c42]'
                                 : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
@@ -701,7 +700,7 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                             e.stopPropagation();
                             onSendToAnalyzer(match);
                           }}
-                          className="px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl bg-slate-100 dark:bg-[#141b2b] hover:bg-slate-200 dark:hover:bg-[#1c2438] text-slate-700 dark:text-zinc-200 text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#222c42]"
+                          className="h-10 sm:h-11 px-2.5 sm:px-3.5 rounded-xl bg-slate-100 dark:bg-[#141b2b] hover:bg-slate-200 dark:hover:bg-[#1c2438] text-slate-700 dark:text-zinc-200 text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#222c42] shrink-0"
                           title="Open in Matchup Analyzer"
                         >
                           <SlidersHorizontal className="h-4 w-4 text-slate-600 dark:text-amber-400" />
@@ -711,7 +710,7 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                         {/* Details Toggle */}
                         <button
                           onClick={(e) => toggleExpand(match.id, e)}
-                          className="p-2 sm:p-2.5 rounded-xl text-slate-400 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b2b] transition-colors cursor-pointer"
+                          className="h-10 sm:h-11 w-10 sm:w-11 rounded-xl text-slate-400 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b2b] transition-colors cursor-pointer flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-[#222c42]"
                           title="Toggle quick preview notes"
                         >
                           {isExpanded ? (
