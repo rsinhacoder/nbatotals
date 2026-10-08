@@ -1,0 +1,76 @@
+{
+  "training_date": "2026-10-08 14:52:03",
+  "seasons_included": [
+    "2020-21",
+    "2021-22",
+    "2022-23",
+    "2023-24",
+    "2024-25"
+  ],
+  "total_games": 6000,
+  "model_intercept": 119.5598,
+  "model_slope": 2.3621,
+  "other_3_intercept": 119.5598,
+  "other_3_slope": 1.3621,
+  "r_squared": 0.465,
+  "mae": 9.77,
+  "rmse": 12.22,
+  "historical_mae_benchmark": 9.77,
+  "within_5_pct": 31.75,
+  "within_10_pct": 58.22,
+  "within_15_pct": 77.95,
+  "success_rate": 57.33,
+  "lowest_quarter_threshold": 47,
+  "regulation_total_threshold": 219,
+  "under_219_ratio": 10.26,
+  "season_breakdown": [
+    {
+      "season": "2020-21",
+      "games": 1080,
+      "avg_lowest_quarter": 44.95,
+      "avg_regulation_total": 225.27,
+      "mae": 9.65,
+      "r_squared": 0.4691
+    },
+    {
+      "season": "2021-22",
+      "games": 1230,
+      "avg_lowest_quarter": 44.2,
+      "avg_regulation_total": 221.11,
+      "mae": 10.06,
+      "r_squared": 0.4907
+    },
+    {
+      "season": "2022-23",
+      "games": 1230,
+      "avg_lowest_quarter": 45.72,
+      "avg_regulation_total": 228.55,
+      "mae": 10.09,
+      "r_squared": 0.4312
+    },
+    {
+      "season": "2023-24",
+      "games": 1230,
+      "avg_lowest_quarter": 45.41,
+      "avg_regulation_total": 228.14,
+      "mae": 9.82,
+      "r_squared": 0.4332
+    },
+    {
+      "season": "2024-25",
+      "games": 1230,
+      "avg_lowest_quarter": 45.16,
+      "avg_regulation_total": 227.18,
+      "mae": 9.22,
+      "r_squared": 0.476
+    }
+  ],
+  "comparison_with_original_2yr": {
+    "original_intercept": 114.7597,
+    "original_slope": 2.3274,
+    "original_mae": 10.16,
+    "delta_intercept": 4.8001,
+    "delta_slope": 0.0347,
+    "delta_mae": -0.39
+  }
+}

@@ -1,0 +1,8 @@
+# Robots.txt for NBA Totals (nbatotals.com)
+# Allow all search engine bots to crawl and index all pages
+
+User-agent: *
+Allow: /
+
+# Direct search bots to the official XML sitemap
+Sitemap: https://nbatotals.com/sitemap.xml
