@@ -290,23 +290,23 @@ export const AdBanner: React.FC<AdBannerProps> = ({
 
   // 4. Sticky Bottom Bar
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 dark:bg-[#070b14]/95 text-white border-t border-slate-800 dark:border-indigo-500/30 backdrop-blur-md py-1.5 sm:py-2.5 px-3 sm:px-4 shadow-2xl animate-slide-up transition-colors duration-200">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2 truncate">
-          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30 shrink-0">
-            OFFER
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 dark:bg-[#070b14]/95 text-white border-t border-slate-800 dark:border-indigo-500/30 backdrop-blur-md py-2.5 px-3 sm:px-4 shadow-2xl animate-slide-up transition-colors duration-200">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 truncate">
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30 shrink-0">
+            OFFICIAL OFFER
           </span>
           <div className="text-xs sm:text-sm text-slate-200 truncate">
-            <strong className="text-white font-bold">{promo.name}:</strong> {promo.offer}
+            <strong className="text-white font-bold">{promo.name}:</strong> {promo.offer} · <span className="text-slate-400">{promo.terms}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <a
             href={promo.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm transition-all"
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm transition-all"
           >
             Claim ↗
           </a>
