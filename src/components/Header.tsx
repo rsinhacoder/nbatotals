@@ -132,36 +132,39 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="border-b border-slate-200 dark:border-[#1c2438] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md sticky top-0 z-40 shadow-xs transition-colors duration-200 w-full overflow-x-clip">
       {/* Top Main Navigation Bar */}
-      <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2.5">
-        {/* Left: Brand Identity & Active Model Selector */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+        {/* Left: Brand Identity */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Logo Badge */}
           <QuantLogoMark />
 
           {/* Brand Title */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1">
+            <h1 className="text-base sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1 whitespace-nowrap">
               <span>NBA</span>
               <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent">
                 TOTALS
               </span>
-              <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden md:inline">.com</span>
+              <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden sm:inline">.com</span>
             </h1>
-            <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
+            <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
               QUANT PRO
             </span>
           </div>
+        </div>
 
-          {/* Model Dropdown Trigger */}
+        {/* Right Utility Group */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Model Selector Dropdown */}
           <div className="relative inline-block text-left shrink-0">
             <button
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-[#141b2a] hover:bg-slate-50 dark:hover:bg-[#1c2438] text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-[#222c42] shadow-2xs transition-all cursor-pointer group"
+              className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-[#141b2a] hover:bg-slate-50 dark:hover:bg-[#1c2438] text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-[#222c42] shadow-2xs transition-all cursor-pointer group"
               title={`Active Model: ${activeModel.name}`}
             >
-              <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600 dark:bg-blue-400"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600 dark:bg-blue-400"></span>
               </span>
               <span className="font-mono text-xs font-bold sm:hidden">
                 {activeModel.id === '5_YEAR' ? '5-Yr' : activeModel.id === '2_YEAR' ? '2-Yr' : 'Model'}
@@ -182,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="fixed inset-0 z-40"
                   onClick={() => setIsModelDropdownOpen(false)}
                 />
-                <div className="origin-top-left absolute left-0 mt-1.5 w-80 rounded-2xl shadow-xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-[#222c42] p-2.5 z-50 animate-fade-in text-xs sm:text-sm">
+                <div className="origin-top-right absolute right-0 mt-1.5 w-76 sm:w-80 rounded-2xl shadow-xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-[#222c42] p-2.5 z-50 animate-fade-in text-xs sm:text-sm">
                   <div className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider border-b border-slate-100 dark:border-[#1c2438] mb-2 flex items-center justify-between">
                     <span>Regression Calibration</span>
                     <span className="text-blue-600 dark:text-blue-400 font-mono font-bold">N=6,000 DB</span>
@@ -238,28 +241,25 @@ export const Header: React.FC<HeaderProps> = ({
               </>
             )}
           </div>
-        </div>
-
-        {/* Right Utility Group */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Theme Switcher */}
-          <ThemeSwitcher />
 
           {/* Sync ESPN button */}
           <button
             onClick={onOpenSync}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition-all cursor-pointer text-xs sm:text-sm"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition-all cursor-pointer text-xs sm:text-sm shrink-0"
             title="Fetch live games from ESPN API"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Sync Live</span>
           </button>
 
-          {/* Export / Data Actions Dropdown */}
-          <div className="relative inline-block text-left hidden sm:inline-block">
+          {/* Theme Switcher */}
+          <ThemeSwitcher />
+
+          {/* Export / Data Actions Dropdown - Desktop Only */}
+          <div className="hidden md:inline-block relative text-left">
             <button
               onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#141b2a] dark:hover:bg-[#1a2336] text-slate-700 dark:text-zinc-200 border border-slate-300 dark:border-[#222c42] font-semibold transition-colors cursor-pointer text-xs sm:text-sm shadow-2xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#141b2a] dark:hover:bg-[#1a2336] text-slate-700 dark:text-zinc-200 border border-slate-300 dark:border-[#222c42] font-semibold transition-colors cursor-pointer text-xs sm:text-sm shadow-2xs"
               title="Data / Export"
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-600" />

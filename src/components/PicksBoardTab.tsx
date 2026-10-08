@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Check,
   Calendar,
+  Clock,
 } from 'lucide-react';
 import { MatchDetailPage } from './MatchDetailPage';
 import { AdBanner } from './AdBanner';
@@ -461,50 +462,86 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
 
                 <div
                   onClick={() => setSelectedMatch(match)}
-                  className="relative bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] hover:border-blue-400/80 dark:hover:border-blue-500/50 hover:shadow-lg rounded-2xl transition-all duration-200 shadow-xs cursor-pointer group overflow-hidden"
+                  className="relative bg-gradient-to-br from-white via-slate-50/70 to-blue-50/30 dark:from-[#0d1424] dark:via-[#0c1220] dark:to-[#131c33] border border-slate-200/90 dark:border-[#1e2942] hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:shadow-xl rounded-2xl sm:rounded-3xl transition-all duration-300 shadow-xs cursor-pointer group overflow-hidden"
                   title="Click to open dedicated match page with stats and news"
                 >
-                  {/* Subtle left conviction indicator strip */}
+                  {/* Subtle top ambient glow gradient line */}
+                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/25 to-transparent pointer-events-none" />
+
+                  {/* Conviction-based ambient background glow */}
+                  {isUnder && (
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-44 h-44 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none" />
+                  )}
+                  {isOver && (
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-44 h-44 rounded-full bg-rose-500/5 blur-3xl pointer-events-none" />
+                  )}
+
+                  {/* Left conviction indicator strip with smooth gradient */}
                   <div
-                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                    className={`absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 ${
                       isUnder
-                        ? 'bg-emerald-500'
+                        ? 'bg-gradient-to-b from-emerald-400 to-emerald-600'
                         : isOver
-                        ? 'bg-rose-500'
+                        ? 'bg-gradient-to-b from-rose-400 to-rose-600'
                         : 'bg-slate-300 dark:bg-slate-700'
                     }`}
                   />
 
                   {/* Main Match Row */}
                   <div className="p-3.5 sm:p-5 pl-4 sm:pl-6 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-                    {/* Left: Teams & Tipoff */}
-                    <div className="flex items-center gap-3.5 w-full xl:w-auto min-w-0">
-                      {/* Team Logos */}
-                      <div className="flex items-center -space-x-2.5 shrink-0">
-                        <img
-                          src={away.logo}
-                          alt={away.name}
-                          className="h-11 w-11 sm:h-12 sm:w-12 object-contain bg-slate-50 dark:bg-[#141b2b] rounded-2xl p-1.5 border border-slate-200/90 dark:border-[#222c42] shadow-xs"
-                        />
-                        <img
-                          src={home.logo}
-                          alt={home.name}
-                          className="h-11 w-11 sm:h-12 sm:w-12 object-contain bg-slate-50 dark:bg-[#141b2b] rounded-2xl p-1.5 border border-slate-200/90 dark:border-[#222c42] shadow-xs"
-                        />
+                    {/* Left: Expanded Logos & Matchup Info */}
+                    <div className="flex items-center gap-3 sm:gap-4 w-full xl:w-auto min-w-0">
+                      {/* Expanded Team Logos with High-Def Tiles */}
+                      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                        {/* Away Logo */}
+                        <div
+                          className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white/95 dark:bg-[#131b2e]/90 border border-slate-200/90 dark:border-[#25344f] p-1.5 shadow-sm flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                          title={away.name}
+                        >
+                          <img
+                            src={away.logo}
+                            alt={away.name}
+                            className="h-full w-full object-contain filter drop-shadow-xs"
+                            loading="lazy"
+                          />
+                        </div>
+
+                        {/* Centered vs symbol */}
+                        <span className="text-xs font-black font-mono text-slate-400 dark:text-zinc-500 select-none">
+                          @
+                        </span>
+
+                        {/* Home Logo */}
+                        <div
+                          className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white/95 dark:bg-[#131b2e]/90 border border-slate-200/90 dark:border-[#25344f] p-1.5 shadow-sm flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                          title={home.name}
+                        >
+                          <img
+                            src={home.logo}
+                            alt={home.name}
+                            className="h-full w-full object-contain filter drop-shadow-xs"
+                            loading="lazy"
+                          />
+                        </div>
                       </div>
 
+                      {/* Team Names, Time Badge (NO date tag), and Records */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-black text-slate-900 dark:text-white text-base sm:text-lg lg:text-xl tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {away.shortName} <span className="text-slate-400 dark:text-zinc-500 font-normal text-sm">@</span> {home.shortName}
                           </span>
+
+                          {/* Time badge only - Date tag is removed */}
                           {match.status === 'Live' ? (
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse shadow-xs">
+                              <span className="h-1.5 w-1.5 rounded-full bg-white" />
                               LIVE
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-semibold bg-slate-100 dark:bg-[#141b2b] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-[#222c42]">
-                              {formatDateLabel(match.date)} · {match.time}
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-slate-100/90 dark:bg-[#141c2e] text-slate-600 dark:text-zinc-300 border border-slate-200/90 dark:border-[#24334c]">
+                              <Clock className="h-3 w-3 text-slate-400 dark:text-zinc-500" />
+                              {match.time}
                             </span>
                           )}
                         </div>
@@ -520,7 +557,7 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                     {/* Middle: The Core Quant Numbers Grid */}
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full xl:w-auto grid grid-cols-3 gap-2 sm:gap-6 bg-slate-50/90 dark:bg-[#070b14] border border-slate-200/90 dark:border-[#1e273d] rounded-2xl p-3 sm:px-5 sm:py-3.5"
+                      className="w-full xl:w-auto grid grid-cols-3 gap-2 sm:gap-6 bg-gradient-to-b from-slate-100/70 via-slate-50/50 to-slate-100/40 dark:from-[#090f1c]/90 dark:via-[#070b15]/85 dark:to-[#0b1120]/90 border border-slate-200/90 dark:border-[#1e2a42] rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xs backdrop-blur-xs"
                     >
                       {/* Market Line */}
                       <div className="text-center">
@@ -592,96 +629,98 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                     {/* Right: Sharp Actionable Recommendation & Buttons */}
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full xl:w-auto flex items-center gap-2.5 justify-between xl:justify-end flex-wrap"
+                      className="w-full xl:w-auto flex items-center gap-2 sm:gap-2.5 justify-between xl:justify-end flex-wrap"
                     >
                       {/* The Primary Pick Verdict Badge */}
                       {isUnder || isLeanUnder ? (
-                        <div className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/15 to-emerald-500/5 dark:from-emerald-950/80 dark:to-emerald-900/60 border border-emerald-300 dark:border-emerald-500/60 text-emerald-900 dark:text-emerald-200 flex items-center gap-2.5 shadow-2xs">
+                        <div className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-teal-500/5 dark:from-emerald-950/80 dark:via-emerald-900/60 dark:to-[#0d2218] border border-emerald-300/80 dark:border-emerald-500/50 text-emerald-900 dark:text-emerald-200 flex items-center gap-2 shadow-2xs">
                           <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <div>
-                            <div className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                            <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                               {isUnder ? 'HIGH CONVICTION' : 'LEAN'}
                             </div>
-                            <div className="text-xs sm:text-sm font-black font-mono text-emerald-950 dark:text-white">
+                            <div className="text-xs sm:text-sm font-black font-mono text-emerald-950 dark:text-white whitespace-nowrap">
                               BET UNDER {match.sportsbookLine}
                             </div>
                           </div>
                         </div>
                       ) : isOver || isLeanOver ? (
-                        <div className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-rose-500/10 via-rose-500/15 to-rose-500/5 dark:from-rose-950/80 dark:to-rose-900/60 border border-rose-300 dark:border-rose-500/60 text-rose-900 dark:text-rose-200 flex items-center gap-2.5 shadow-2xs">
+                        <div className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-rose-500/15 via-rose-500/10 to-amber-500/5 dark:from-rose-950/80 dark:via-rose-900/60 dark:to-[#220d14] border border-rose-300/80 dark:border-rose-500/50 text-rose-900 dark:text-rose-200 flex items-center gap-2 shadow-2xs">
                           <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600 dark:text-rose-400 shrink-0" />
                           <div>
-                            <div className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-400">
+                            <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-400">
                               {isOver ? 'HIGH CONVICTION' : 'LEAN'}
                             </div>
-                            <div className="text-xs sm:text-sm font-black font-mono text-rose-950 dark:text-white">
+                            <div className="text-xs sm:text-sm font-black font-mono text-rose-950 dark:text-white whitespace-nowrap">
                               BET OVER {match.sportsbookLine}
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-100 dark:bg-[#141b2b] border border-slate-200 dark:border-[#222c42] text-slate-700 dark:text-zinc-400">
-                          <div className="text-[10px] uppercase font-black tracking-wider text-slate-500 dark:text-zinc-500">
+                        <div className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-100 dark:bg-[#141b2b] border border-slate-200 dark:border-[#222c42] text-slate-700 dark:text-zinc-400">
+                          <div className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider text-slate-500 dark:text-zinc-500">
                             MARKET EFFICIENT
                           </div>
-                          <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-zinc-300 font-mono">
+                          <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-zinc-300 font-mono whitespace-nowrap">
                             PASS / FAIR LINE
                           </div>
                         </div>
                       )}
 
-                      {/* Action Button: Track Bet */}
-                      {!isPass && (
+                      <div className="flex items-center gap-1.5 sm:gap-2 ml-auto xl:ml-0">
+                        {/* Action Button: Track Bet */}
+                        {!isPass && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onTrackBet(match, match.edge < 0 ? 'UNDER' : 'OVER');
+                            }}
+                            className={`px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap ${
+                              isTracked
+                                ? 'bg-slate-100 dark:bg-[#141b2b] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-[#222c42]'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                            }`}
+                          >
+                            {isTracked ? (
+                              <>
+                                <BookmarkCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                <span>Tracked</span>
+                              </>
+                            ) : (
+                              <>
+                                <BookmarkPlus className="h-4 w-4" />
+                                <span>+ Track</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+
+                        {/* Action Button: Deep Analyze */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onTrackBet(match, match.edge < 0 ? 'UNDER' : 'OVER');
+                            onSendToAnalyzer(match);
                           }}
-                          className={`px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
-                            isTracked
-                              ? 'bg-slate-100 dark:bg-[#141b2b] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-[#222c42]'
-                              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
-                          }`}
+                          className="px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl bg-slate-100 dark:bg-[#141b2b] hover:bg-slate-200 dark:hover:bg-[#1c2438] text-slate-700 dark:text-zinc-200 text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#222c42]"
+                          title="Open in Matchup Analyzer"
                         >
-                          {isTracked ? (
-                            <>
-                              <BookmarkCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                              <span>Tracked</span>
-                            </>
+                          <SlidersHorizontal className="h-4 w-4 text-slate-600 dark:text-amber-400" />
+                          <span className="hidden sm:inline">Analyze</span>
+                        </button>
+
+                        {/* Details Toggle */}
+                        <button
+                          onClick={(e) => toggleExpand(match.id, e)}
+                          className="p-2 sm:p-2.5 rounded-xl text-slate-400 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b2b] transition-colors cursor-pointer"
+                          title="Toggle quick preview notes"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
                           ) : (
-                            <>
-                              <BookmarkPlus className="h-4 w-4" />
-                              <span>+ Track</span>
-                            </>
+                            <ChevronDown className="h-4 w-4" />
                           )}
                         </button>
-                      )}
-
-                      {/* Action Button: Deep Analyze */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSendToAnalyzer(match);
-                        }}
-                        className="px-3.5 py-2 sm:py-2.5 rounded-xl bg-slate-100 dark:bg-[#141b2b] hover:bg-slate-200 dark:hover:bg-[#1c2438] text-slate-700 dark:text-zinc-200 text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-[#222c42]"
-                        title="Open in Matchup Analyzer"
-                      >
-                        <SlidersHorizontal className="h-4 w-4 text-slate-600 dark:text-amber-400" />
-                        <span className="hidden sm:inline">Analyze</span>
-                      </button>
-
-                      {/* Details Toggle */}
-                      <button
-                        onClick={(e) => toggleExpand(match.id, e)}
-                        className="p-2 sm:p-2.5 rounded-xl text-slate-400 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b2b] transition-colors cursor-pointer"
-                        title="Toggle quick preview notes"
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </button>
+                      </div>
                     </div>
                   </div>
 
