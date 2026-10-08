@@ -443,7 +443,7 @@ export function App() {
   const seasonLabel = dashboardMetrics.season || getCurrentSeasonLabel();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080b12] text-slate-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-blue-600/15 selection:text-blue-900 dark:selection:bg-amber-500/30 dark:selection:text-amber-200 transition-colors duration-200">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 dark:bg-[#080b12] text-slate-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-blue-600/15 selection:text-blue-900 dark:selection:bg-amber-500/30 dark:selection:text-amber-200 transition-colors duration-200">
       {/* Header & Navigation */}
       <Header
         activeTab={activeTab}
@@ -461,7 +461,7 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0">
         {/* Tab 1: Picks Board */}
         {activeTab === 'picks' && (
           <PicksBoardTab
@@ -590,15 +590,60 @@ export function App() {
 
             {/* Col 3: Hot Keywords & Partners */}
             <div className="space-y-2">
-              <div className="font-bold text-slate-900 dark:text-zinc-200 text-xs uppercase tracking-wider">
-                Sportsbook Partners
+              <div className="font-bold text-slate-900 dark:text-zinc-200 text-xs sm:text-sm uppercase tracking-wider">
+                Official Sportsbook Partners
               </div>
-              <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-zinc-400">
-                <div>DraftKings Sportsbook (Code: <code>QUANT200</code>)</div>
-                <div>FanDuel Sportsbook (Code: <code>MAXEDGE</code>)</div>
-                <div>BetMGM Sportsbook (Code: <code>KINGQUANT</code>)</div>
-                <div>Caesars Sportsbook (Code: <code>CZRQUANT</code>)</div>
-                <div>bet365 Sportsbook (Code: <code>365QUANT</code>)</div>
+              <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-400">
+                <div>
+                  <a
+                    href="https://sportsbook.draftkings.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                  >
+                    DraftKings Sportsbook <span className="text-[11px] text-slate-400 font-mono">· Bet $5, Get $150</span>
+                  </a>
+                </div>
+                <div>
+                  <a
+                    href="https://sportsbook.fanduel.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                  >
+                    FanDuel Sportsbook <span className="text-[11px] text-slate-400 font-mono">· Bet $5, Get $150</span>
+                  </a>
+                </div>
+                <div>
+                  <a
+                    href="https://sports.betmgm.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                  >
+                    BetMGM Sportsbook <span className="text-[11px] text-slate-400 font-mono">· Up to $1,500 Back</span>
+                  </a>
+                </div>
+                <div>
+                  <a
+                    href="https://www.caesars.com/sportsbook-and-casino"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                  >
+                    Caesars Sportsbook <span className="text-[11px] text-slate-400 font-mono">· $1,000 First Bet</span>
+                  </a>
+                </div>
+                <div>
+                  <a
+                    href="https://www.bet365.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                  >
+                    bet365 Sportsbook <span className="text-[11px] text-slate-400 font-mono">· Bet $5, Get $150</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>

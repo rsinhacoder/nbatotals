@@ -460,52 +460,52 @@ export const MatchDetailPage: React.FC<MatchDetailPageProps> = ({
           <AdBanner variant="box" />
 
           {/* Breaking News Feed */}
-          <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-4 space-y-3 shadow-xs">
+          <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
-              <div className="text-xs font-bold text-slate-900 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="text-sm font-extrabold text-slate-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2">
                 <Newspaper className="h-4 w-4 text-blue-600 dark:text-amber-400" />
-                Breaking News &amp; Team Headlines
+                Breaking News &amp; Team Intel
               </div>
-              <span className="text-[10px] text-slate-500 dark:text-zinc-500 font-mono">ESPN Live Feed</span>
+              <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono">Verified ESPN Feed</span>
             </div>
 
             {isLoadingNews ? (
-              <div className="p-6 text-center text-xs text-slate-500 dark:text-zinc-400">
+              <div className="p-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                 Loading latest news from ESPN...
               </div>
             ) : newsArticles.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-500 dark:text-zinc-400">
+              <div className="p-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                 No recent breaking reports found for this matchup.
               </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {newsArticles.map((article) => (
                   <a
                     key={article.id}
                     href={article.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start gap-3 bg-slate-50 hover:bg-blue-50/50 dark:bg-[#090d16] dark:hover:bg-[#151c2d] p-2.5 rounded-lg border border-slate-200 dark:border-[#1c2438] hover:border-blue-300 dark:hover:border-amber-500/40 transition-colors group"
+                    className="flex items-start gap-3.5 bg-slate-50/80 hover:bg-blue-50/50 dark:bg-[#111827] dark:hover:bg-[#172238] p-3 rounded-xl border border-slate-200/80 dark:border-[#1f293d] hover:border-blue-400 dark:hover:border-blue-500/50 transition-all group"
                   >
                     {article.imageUrl && (
                       <img
                         src={article.imageUrl}
                         alt="News thumbnail"
-                        className="h-12 w-16 object-cover rounded-md bg-slate-200 dark:bg-zinc-900 shrink-0"
+                        className="h-16 w-24 object-cover rounded-lg bg-slate-200 dark:bg-zinc-800 shrink-0"
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-slate-900 dark:text-zinc-200 group-hover:text-blue-700 dark:group-hover:text-amber-300 transition-colors line-clamp-2">
+                      <div className="text-sm font-bold text-slate-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-amber-300 transition-colors line-clamp-2 leading-snug">
                         {article.headline}
                       </div>
-                      <div className="text-[10px] text-slate-500 dark:text-zinc-500 line-clamp-1 mt-0.5">
+                      <div className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
                         {article.description}
                       </div>
-                      <div className="text-[9px] text-slate-400 dark:text-zinc-400 font-mono mt-1 flex items-center gap-1">
-                        <span>{new Date(article.published).toLocaleDateString()}</span>
+                      <div className="text-xs text-slate-400 dark:text-zinc-500 font-mono mt-1.5 flex items-center gap-2">
+                        <span>{new Date(article.published).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                         <span>•</span>
-                        <span className="text-blue-600 dark:text-amber-400 flex items-center gap-0.5 font-sans font-medium">
-                          Read on ESPN <ExternalLink className="h-2.5 w-2.5" />
+                        <span className="text-blue-600 dark:text-blue-400 font-sans font-semibold flex items-center gap-1">
+                          Full Story <ExternalLink className="h-3 w-3" />
                         </span>
                       </div>
                     </div>

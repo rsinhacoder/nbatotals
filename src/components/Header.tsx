@@ -130,9 +130,9 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="border-b border-slate-200 dark:border-[#1c2438] bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-md sticky top-0 z-40 shadow-xs transition-colors duration-200">
+    <header className="border-b border-slate-200 dark:border-[#1c2438] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md sticky top-0 z-40 shadow-xs transition-colors duration-200 w-full overflow-x-clip">
       {/* Top Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-2">
+      <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2.5">
         {/* Left: Brand Identity & Active Model Selector */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Logo Badge */}
@@ -140,14 +140,14 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Brand Title */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <h1 className="text-base sm:text-xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1">
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1">
               <span>NBA</span>
               <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent">
                 TOTALS
               </span>
-              <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden lg:inline">.com</span>
+              <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden md:inline">.com</span>
             </h1>
-            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
               QUANT PRO
             </span>
           </div>
@@ -156,21 +156,21 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative inline-block text-left shrink-0">
             <button
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-              className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#141b2a] hover:bg-slate-50 dark:hover:bg-[#1c2438] text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-[#222c42] shadow-2xs transition-all cursor-pointer group"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-[#141b2a] hover:bg-slate-50 dark:hover:bg-[#1c2438] text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-[#222c42] shadow-2xs transition-all cursor-pointer group"
               title={`Active Model: ${activeModel.name}`}
             >
-              <span className="relative flex h-2 w-2 shrink-0">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600 dark:bg-blue-400"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600 dark:bg-blue-400"></span>
               </span>
-              <span className="font-mono text-[11px] font-bold sm:hidden">
+              <span className="font-mono text-xs font-bold sm:hidden">
                 {activeModel.id === '5_YEAR' ? '5-Yr' : activeModel.id === '2_YEAR' ? '2-Yr' : 'Model'}
               </span>
-              <span className="font-mono font-medium hidden sm:inline">
+              <span className="font-mono font-bold hidden sm:inline">
                 {activeModel.shortLabel}
               </span>
               <ChevronDown
-                className={`h-3 w-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform duration-200 ${
+                className={`h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform duration-200 ${
                   isModelDropdownOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -182,32 +182,32 @@ export const Header: React.FC<HeaderProps> = ({
                   className="fixed inset-0 z-40"
                   onClick={() => setIsModelDropdownOpen(false)}
                 />
-                <div className="origin-top-left absolute left-0 mt-1.5 w-72 rounded-xl shadow-xl bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#222c42] p-2 z-50 animate-fade-in text-xs">
-                  <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 dark:text-zinc-400 uppercase tracking-wider border-b border-slate-100 dark:border-[#1c2438] mb-1.5 flex items-center justify-between">
-                    <span>Regression Model Calibration</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-mono">N=6,000 DB</span>
+                <div className="origin-top-left absolute left-0 mt-1.5 w-80 rounded-2xl shadow-xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-[#222c42] p-2.5 z-50 animate-fade-in text-xs sm:text-sm">
+                  <div className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider border-b border-slate-100 dark:border-[#1c2438] mb-2 flex items-center justify-between">
+                    <span>Regression Calibration</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-mono font-bold">N=6,000 DB</span>
                   </div>
                   <button
                     onClick={() => {
                       onSelectModel(MODEL_PRESETS['5_YEAR']);
                       setIsModelDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                    className={`w-full text-left px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
                       activeModel.id === '5_YEAR'
                         ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 font-bold border border-blue-200 dark:border-blue-800/60'
                         : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-[#141b2a]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">5-Year Multi-Season (2020–2025)</span>
+                      <span className="text-xs sm:text-sm font-bold">5-Year Multi-Season (2020–2025)</span>
                       {activeModel.id === '5_YEAR' && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-600 text-white font-bold">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white font-black">
                           Active
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-mono mt-0.5">
-                      6,000 Games • MAE 9.77 • R² 0.465
+                    <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono mt-0.5">
+                      6,000 Games • MAE ±9.77 • R² 0.465
                     </div>
                   </button>
 
@@ -216,22 +216,22 @@ export const Header: React.FC<HeaderProps> = ({
                       onSelectModel(MODEL_PRESETS['2_YEAR']);
                       setIsModelDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 rounded-lg cursor-pointer transition-colors mt-1 ${
+                    className={`w-full text-left px-3 py-2.5 rounded-xl cursor-pointer transition-colors mt-1.5 ${
                       activeModel.id === '2_YEAR'
                         ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 font-bold border border-blue-200 dark:border-blue-800/60'
                         : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-[#141b2a]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">Original 2-Year (2023–2025)</span>
+                      <span className="text-xs sm:text-sm font-bold">Original 2-Year (2023–2025)</span>
                       {activeModel.id === '2_YEAR' && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-600 text-white font-bold">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white font-black">
                           Active
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-mono mt-0.5">
-                      2,460 Games • MAE 10.16 • Baseline
+                    <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono mt-0.5">
+                      2,460 Games • MAE ±10.16 • Baseline
                     </div>
                   </button>
                 </div>
@@ -241,30 +241,30 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Utility Group */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0 text-xs">
-          {/* Theme Switcher (Time of Day / Light / Dark) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Theme Switcher */}
           <ThemeSwitcher />
 
           {/* Sync ESPN button */}
           <button
             onClick={onOpenSync}
-            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs transition-all cursor-pointer text-xs"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition-all cursor-pointer text-xs sm:text-sm"
             title="Fetch live games from ESPN API"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline">Sync Live</span>
           </button>
 
           {/* Export / Data Actions Dropdown */}
-          <div className="relative inline-block text-left">
+          <div className="relative inline-block text-left hidden sm:inline-block">
             <button
               onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#141b2a] dark:hover:bg-[#1a2336] text-slate-700 dark:text-zinc-200 border border-slate-300 dark:border-[#222c42] font-medium transition-colors cursor-pointer text-xs shadow-2xs"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#141b2a] dark:hover:bg-[#1a2336] text-slate-700 dark:text-zinc-200 border border-slate-300 dark:border-[#222c42] font-semibold transition-colors cursor-pointer text-xs sm:text-sm shadow-2xs"
               title="Data / Export"
             >
-              <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">Data / Export</span>
-              <ChevronDown className="h-3 w-3 text-slate-400 dark:text-zinc-400 hidden sm:inline" />
+              <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+              <span>Data / Export</span>
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-400" />
             </button>
 
             {isExportDropdownOpen && (
@@ -273,15 +273,15 @@ export const Header: React.FC<HeaderProps> = ({
                   className="fixed inset-0 z-40"
                   onClick={() => setIsExportDropdownOpen(false)}
                 />
-                <div className="origin-top-right absolute right-0 mt-1.5 w-48 rounded-xl shadow-lg bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#222c42] p-1.5 z-50 animate-fade-in text-xs space-y-1">
+                <div className="origin-top-right absolute right-0 mt-1.5 w-52 rounded-2xl shadow-lg bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-[#222c42] p-2 z-50 animate-fade-in text-xs sm:text-sm space-y-1">
                   <button
                     onClick={() => {
                       onExportExcel();
                       setIsExportDropdownOpen(false);
                     }}
-                    className="w-full text-left px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#1a2336] flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#1a2336] flex items-center gap-2.5 cursor-pointer transition-colors"
                   >
-                    <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+                    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
                     <span>Download Excel (.xlsx)</span>
                   </button>
 
@@ -290,9 +290,9 @@ export const Header: React.FC<HeaderProps> = ({
                       onExportCsv();
                       setIsExportDropdownOpen(false);
                     }}
-                    className="w-full text-left px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#1a2336] flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#1a2336] flex items-center gap-2.5 cursor-pointer transition-colors"
                   >
-                    <Download className="h-3.5 w-3.5 text-blue-600" />
+                    <Download className="h-4 w-4 text-blue-600" />
                     <span>Export Ref Lines (.csv)</span>
                   </button>
 
@@ -301,9 +301,9 @@ export const Header: React.FC<HeaderProps> = ({
                       fileInputRef.current?.click();
                       setIsExportDropdownOpen(false);
                     }}
-                    className="w-full text-left px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#1a2336] flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#1a2336] flex items-center gap-2.5 cursor-pointer transition-colors"
                   >
-                    <Upload className="h-3.5 w-3.5 text-slate-600" />
+                    <Upload className="h-4 w-4 text-slate-600" />
                     <span>Load Ref Lines (.csv)</span>
                   </button>
                 </div>
@@ -322,8 +322,8 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Navigation Tabs Bar */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-[#1c2438]">
-        <nav className="flex space-x-1 sm:space-x-1.5 overflow-x-auto scrollbar-none py-1.5">
+      <div className="max-w-7xl w-full mx-auto px-2 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-[#1c2438]">
+        <nav className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar py-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -331,17 +331,17 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                   isActive
-                    ? 'bg-slate-900 dark:bg-blue-600 text-white font-bold shadow-xs'
+                    ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-[#141b2a]'
                 }`}
               >
-                <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-zinc-400'}`} />
+                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500 dark:text-zinc-400'}`} />
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span
-                    className={`ml-0.5 px-1.5 py-0.2 rounded-md text-[10px] font-bold border ${
+                    className={`ml-0.5 px-2 py-0.5 rounded-full text-xs font-bold border ${
                       isActive
                         ? 'bg-slate-800 dark:bg-blue-700 text-slate-200 dark:text-white border-slate-700 dark:border-blue-500'
                         : tab.badgeColor || 'bg-slate-100 dark:bg-[#141b2a] text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-[#222c42]'

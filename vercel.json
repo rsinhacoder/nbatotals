@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/espn/(.*)",
+      "destination": "https://site.api.espn.com/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
