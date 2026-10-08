@@ -8,6 +8,12 @@ import { QuantAcademyTab } from './components/QuantAcademyTab';
 import { SyncModal } from './components/SyncModal';
 import { ToastContainer, type ToastMessage } from './components/Toast';
 import { AdBanner } from './components/AdBanner';
+import {
+  PrivacyPolicyModal,
+  TermsOfServiceModal,
+  AboutModal,
+  ContactModal,
+} from './components/LegalModals';
 
 import { INITIAL_NBA_GAMES, INITIAL_REFERENCE_TOTALS } from './data/mockGames';
 import { INITIAL_UPCOMING_MATCHES } from './data/upcomingGames';
@@ -42,6 +48,10 @@ export function App() {
   // 'picks' | 'analyzer' | 'tracker' | 'trackrecord' | 'academy'
   const [activeTab, setActiveTab] = useState<string>('picks');
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (title: string, message?: string, type: 'success' | 'info' | 'error' = 'success') => {
@@ -534,23 +544,41 @@ export function App() {
         onSyncComplete={handleSyncComplete}
       />
 
+      {/* Legal & Compliance Modals for Google AdSense & Regulatory Compliance */}
+      <PrivacyPolicyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+      />
+      <TermsOfServiceModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+      />
+      <AboutModal
+        isOpen={isAboutModalOpen}
+        onClose={() => setIsAboutModalOpen(false)}
+      />
+      <ContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+      />
+
       {/* SEO-Rich Production Footer */}
       <footer className="border-t border-slate-200 dark:border-[#1c2438] bg-white dark:bg-[#0b0f19] pt-10 pb-16 text-xs text-slate-500 dark:text-zinc-500 mb-14 md:mb-0 shadow-xs transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Col 1: Brand & Model Overview */}
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="font-black text-slate-900 dark:text-white text-sm">NBATOTALS.COM</span>
                 <span className="px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
                   QUANT PRO
                 </span>
               </div>
-              <p className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-400 max-w-lg">
-                <strong>NBATotals.com</strong> is an advanced quantitative sports analytics engine specializing in daily NBA Over/Under predictions, totals line shopping, and pace regression. Calibrated across <strong>6,000 completed NBA games</strong> across 5 full seasons (2020–2025) to isolate the mathematical Lowest-Scoring Quarter floor.
+              <p className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-400">
+                <strong>NBATotals.com</strong> is an advanced quantitative sports analytics engine specializing in daily NBA Over/Under predictions, totals line shopping, and pace regression. Calibrated across <strong>6,000 completed NBA games</strong> across 5 full seasons (2020–2025).
               </p>
               <div className="text-[11px] font-mono text-slate-600 dark:text-zinc-400 pt-1">
-                Active Model: <strong className="text-slate-800 dark:text-slate-200">{activeModel.name}</strong> • MAE: ±{activeModel.historicalMae.toFixed(2)} pts • N = {activeModel.sampleSize}
+                Active Model: <strong className="text-slate-800 dark:text-slate-200">{activeModel.name}</strong> • MAE: ±{activeModel.historicalMae.toFixed(2)} pts
               </div>
             </div>
 
@@ -588,9 +616,60 @@ export function App() {
               </ul>
             </div>
 
-            {/* Col 3: Hot Keywords & Partners */}
+            {/* Col 3: Legal & Regulatory (AdSense Mandatory) */}
             <div className="space-y-2">
-              <div className="font-bold text-slate-900 dark:text-zinc-200 text-xs sm:text-sm uppercase tracking-wider">
+              <div className="font-bold text-slate-900 dark:text-zinc-200 text-xs uppercase tracking-wider">
+                Legal &amp; Transparency
+              </div>
+              <ul className="space-y-1.5 text-[11px]">
+                <li>
+                  <button
+                    onClick={() => setIsPrivacyModalOpen(true)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer text-left"
+                  >
+                    Privacy Policy &amp; Cookie Consent
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setIsTermsModalOpen(true)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer text-left"
+                  >
+                    Terms of Service &amp; Disclaimer
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setIsAboutModalOpen(true)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer text-left"
+                  >
+                    About Us &amp; Model Methodology
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setIsContactModalOpen(true)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer text-left"
+                  >
+                    Contact Support &amp; Editorial Team
+                  </button>
+                </li>
+                <li>
+                  <a
+                    href="/ads.txt"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-600 dark:hover:text-blue-400 font-mono text-[10px] inline-flex items-center gap-1"
+                  >
+                    Authorized Digital Sellers (ads.txt) ↗
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 4: Official Sportsbook Partners */}
+            <div className="space-y-2">
+              <div className="font-bold text-slate-900 dark:text-zinc-200 text-xs uppercase tracking-wider">
                 Official Sportsbook Partners
               </div>
               <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-400">
@@ -648,12 +727,28 @@ export function App() {
             </div>
           </div>
 
-          {/* Bottom Bar: Disclaimer & Legal */}
-          <div className="border-t border-slate-200 dark:border-[#1c2438] pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-slate-500 dark:text-zinc-500">
-            <div>
-              &copy; {new Date().getFullYear()} NBA Quant Analytics. All rights reserved. Not affiliated with the National Basketball Association (NBA).
+          {/* Bottom Bar: Disclaimer & Legal Links */}
+          <div className="border-t border-slate-200 dark:border-[#1c2438] pt-4 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] text-slate-500 dark:text-zinc-500">
+            <div className="flex items-center gap-2.5 flex-wrap justify-center md:justify-start">
+              <span>&copy; {new Date().getFullYear()} NBATotals.com. All rights reserved.</span>
+              <span>•</span>
+              <button onClick={() => setIsPrivacyModalOpen(true)} className="hover:text-blue-600 dark:hover:text-blue-400 underline cursor-pointer">
+                Privacy Policy
+              </button>
+              <span>•</span>
+              <button onClick={() => setIsTermsModalOpen(true)} className="hover:text-blue-600 dark:hover:text-blue-400 underline cursor-pointer">
+                Terms
+              </button>
+              <span>•</span>
+              <button onClick={() => setIsAboutModalOpen(true)} className="hover:text-blue-600 dark:hover:text-blue-400 underline cursor-pointer">
+                About
+              </button>
+              <span>•</span>
+              <button onClick={() => setIsContactModalOpen(true)} className="hover:text-blue-600 dark:hover:text-blue-400 underline cursor-pointer">
+                Contact
+              </button>
             </div>
-            <div className="text-center sm:text-right">
+            <div className="text-center md:text-right text-[10px]">
               21+ Only. Gamble Responsibly. Problem Gambling? Call <strong>1-800-GAMBLER</strong>.
             </div>
           </div>
