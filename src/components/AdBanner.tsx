@@ -102,7 +102,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   });
 
   const adsenseSlot = customSlotId || (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_GOOGLE_ADSENSE_SLOT : undefined);
-  const adsenseClient = customPublisherId || (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_GOOGLE_ADSENSE_CLIENT : undefined);
+  const adsenseClient = customPublisherId || (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_GOOGLE_ADSENSE_CLIENT : undefined) || 'ca-pub-8245646369863549';
 
   React.useEffect(() => {
     if (adsenseClient && adsenseSlot) {
