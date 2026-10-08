@@ -541,13 +541,13 @@ export function App() {
             {/* Col 1: Brand & Model Overview */}
             <div className="space-y-2 md:col-span-2">
               <div className="flex items-center gap-2">
-                <span className="font-black text-slate-900 dark:text-white text-sm">NBA QUANT O/U FORECASTER</span>
+                <span className="font-black text-slate-900 dark:text-white text-sm">NBATOTALS.COM</span>
                 <span className="px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
-                  PRO
+                  QUANT PRO
                 </span>
               </div>
               <p className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-400 max-w-lg">
-                NBA Quant is an advanced sports analytics engine specializing in daily NBA Over/Under predictions, totals line shopping, and pace regression. Calibrated across <strong>6,000 completed NBA games</strong> across 5 full seasons (2020–2025) to isolate the mathematical Lowest-Scoring Quarter floor.
+                <strong>NBATotals.com</strong> is an advanced quantitative sports analytics engine specializing in daily NBA Over/Under predictions, totals line shopping, and pace regression. Calibrated across <strong>6,000 completed NBA games</strong> across 5 full seasons (2020–2025) to isolate the mathematical Lowest-Scoring Quarter floor.
               </p>
               <div className="text-[11px] font-mono text-slate-600 dark:text-zinc-400 pt-1">
                 Active Model: <strong className="text-slate-800 dark:text-slate-200">{activeModel.name}</strong> • MAE: ±{activeModel.historicalMae.toFixed(2)} pts • N = {activeModel.sampleSize}

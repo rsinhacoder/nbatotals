@@ -136,7 +136,7 @@ export const TrackRecordTab: React.FC<TrackRecordTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner with Sub-Nav and Export Buttons */}
-      <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-6 transition-colors duration-200">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-indigo-950/80 text-blue-700 dark:text-indigo-400 border border-blue-200 dark:border-indigo-800/80 flex items-center gap-1.5">

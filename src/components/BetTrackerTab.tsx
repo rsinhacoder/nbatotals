@@ -112,7 +112,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-5 shadow-xs transition-colors duration-200">
+      <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-5 shadow-xs transition-colors duration-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-emerald-500/10 text-blue-700 dark:text-emerald-400 border border-blue-200 dark:border-emerald-500/20">
@@ -151,7 +151,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {/* Card 1: Win Rate */}
-        <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-4 shadow-xs transition-colors duration-200">
+        <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-4 shadow-xs transition-colors duration-200">
           <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
             Resolved Win Rate
           </div>
@@ -164,7 +164,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
         </div>
 
         {/* Card 2: Net Units */}
-        <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-4 shadow-xs transition-colors duration-200">
+        <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-4 shadow-xs transition-colors duration-200">
           <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
             Net Units (ROI)
           </div>
@@ -181,7 +181,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
         </div>
 
         {/* Card 3: Active Pending */}
-        <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-4 shadow-xs transition-colors duration-200">
+        <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-4 shadow-xs transition-colors duration-200">
           <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
             Pending Wagers
           </div>
@@ -194,7 +194,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
         </div>
 
         {/* Card 4: Total Tracked */}
-        <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-4 shadow-xs transition-colors duration-200">
+        <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-4 shadow-xs transition-colors duration-200">
           <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
             Total Tracked Picks
           </div>

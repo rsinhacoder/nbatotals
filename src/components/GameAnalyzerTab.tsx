@@ -189,7 +189,7 @@ export const GameAnalyzerTab: React.FC<GameAnalyzerTabProps> = ({
   return (
     <div className="space-y-4">
       {/* Header & Mode Switcher */}
-      <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs transition-colors duration-200">
+      <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs transition-colors duration-200">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-200 flex items-center gap-1.5">
@@ -206,12 +206,12 @@ export const GameAnalyzerTab: React.FC<GameAnalyzerTabProps> = ({
         </div>
 
         {/* Mode Switcher */}
-        <div className="flex items-center bg-slate-100 dark:bg-[#090d16] border border-slate-200 dark:border-[#1c2438] rounded-lg p-0.5 shrink-0 self-start md:self-center">
+        <div className="flex items-center bg-slate-100 dark:bg-[#141b2b] border border-slate-200 dark:border-[#222c42] rounded-xl p-0.5 shrink-0 self-start md:self-center">
           <button
             onClick={() => setAnalyzerMode('pregame')}
-            className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               analyzerMode === 'pregame'
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
+                ? 'bg-white dark:bg-[#1c2438] text-slate-900 dark:text-white shadow-2xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -219,7 +219,7 @@ export const GameAnalyzerTab: React.FC<GameAnalyzerTabProps> = ({
           </button>
           <button
             onClick={() => setAnalyzerMode('live')}
-            className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               analyzerMode === 'live'
                 ? 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 shadow-2xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -235,7 +235,7 @@ export const GameAnalyzerTab: React.FC<GameAnalyzerTabProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column (5 cols): Teams & Inputs */}
         <div className="lg:col-span-5 space-y-3">
-          <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-4 space-y-3.5 shadow-xs transition-colors duration-200">
+          <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs transition-colors duration-200">
             <div className="text-xs font-bold text-slate-900 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
               <Sliders className="h-3.5 w-3.5 text-blue-600 dark:text-amber-400" />
               Matchup &amp; Market Inputs
@@ -402,7 +402,7 @@ export const GameAnalyzerTab: React.FC<GameAnalyzerTabProps> = ({
           </div>
 
           {/* Quick Formula Card */}
-          <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-3 text-[11px] text-slate-600 dark:text-slate-400 space-y-1 font-mono shadow-xs transition-colors duration-200">
+          <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-3.5 text-[11px] text-slate-600 dark:text-slate-400 space-y-1 font-mono shadow-xs transition-colors duration-200">
             <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-300 font-sans">
               <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-amber-400" />
               Regression Calculation
@@ -417,12 +417,12 @@ export const GameAnalyzerTab: React.FC<GameAnalyzerTabProps> = ({
         <div className="lg:col-span-7 space-y-3">
           {/* Main Verdict Card */}
           <div
-            className={`bg-white dark:bg-[#0f1422] border ${verdict.borderColor} rounded-xl p-5 shadow-xs space-y-4 relative overflow-hidden transition-colors duration-200`}
+            className={`bg-white dark:bg-[#0c1220] border ${verdict.borderColor} rounded-2xl p-5 shadow-xs space-y-4 relative overflow-hidden transition-colors duration-200`}
           >
             {/* Top Badge and Win Prob */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider ${verdict.badgeBg}`}>
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${verdict.badgeBg}`}>
                   {verdict.action} {verdict.type !== 'PASS' ? sportsbookLine : ''}
                 </span>
                 <span className={`text-[11px] font-bold uppercase tracking-wider ${verdict.textColor}`}>
@@ -451,7 +451,7 @@ export const GameAnalyzerTab: React.FC<GameAnalyzerTabProps> = ({
             </div>
 
             {/* Numbers Comparison Strip */}
-            <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-[#090d16] border border-slate-200 dark:border-[#1c2438] rounded-lg p-3 text-center">
+            <div className="grid grid-cols-3 gap-2 bg-slate-50/80 dark:bg-[#070b14] border border-slate-200/90 dark:border-[#1c2438] rounded-xl p-3 text-center">
               <div>
                 <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">
                   Sportsbook Line

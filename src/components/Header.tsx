@@ -139,15 +139,16 @@ export const Header: React.FC<HeaderProps> = ({
           <QuantLogoMark />
 
           {/* Brand Title */}
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <h1 className="text-base sm:text-xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1">
               <span>NBA</span>
               <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent">
-                QUANT
+                TOTALS
               </span>
+              <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden lg:inline">.com</span>
             </h1>
-            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-extrabold tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
-              O/U PRO
+            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
+              QUANT PRO
             </span>
           </div>
 

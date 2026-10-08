@@ -93,7 +93,13 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   className = '',
 }) => {
   const [promoIndex, setPromoIndex] = useState(0);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(`nba_ad_dismissed_${variant}`) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const adsenseSlot = customSlotId || (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_GOOGLE_ADSENSE_SLOT : undefined);
   const adsenseClient = customPublisherId || (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_GOOGLE_ADSENSE_CLIENT : undefined);
@@ -107,6 +113,14 @@ export const AdBanner: React.FC<AdBannerProps> = ({
       }
     }
   }, [adsenseClient, adsenseSlot]);
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDismissed(true);
+    try {
+      localStorage.setItem(`nba_ad_dismissed_${variant}`, 'true');
+    } catch {}
+  };
 
   if (isDismissed) return null;
 
@@ -127,73 +141,67 @@ export const AdBanner: React.FC<AdBannerProps> = ({
 
   const promo = PROMOS[promoIndex % PROMOS.length];
 
-  // Rotate promo on click
   const handleNextPromo = (e: React.MouseEvent) => {
     e.stopPropagation();
     setPromoIndex((prev) => (prev + 1) % PROMOS.length);
   };
 
-  // 1. Leaderboard Banner (Wide horizontal banner e.g. 728x90)
+  // 1. Sleek, Slim Luxury Leaderboard Strip (Reduced vertical footprint, high-end feel)
   if (variant === 'leaderboard') {
     return (
-      <div className={`relative bg-gradient-to-r from-blue-50/60 via-white to-blue-50/60 dark:from-[#111726] dark:via-[#151c2e] dark:to-[#111726] border border-blue-200/80 dark:border-amber-500/30 rounded-xl p-3 shadow-xs overflow-hidden transition-colors duration-200 ${className}`}>
-        {/* Ad Tag Badge */}
-        <div className="flex items-center justify-between mb-1.5 text-[9px] uppercase tracking-wider text-slate-500 dark:text-zinc-400 font-mono">
-          <span className="flex items-center gap-1 text-blue-700 dark:text-amber-400 font-bold">
-            <Sparkles className="h-2.5 w-2.5" />
-            SPONSORED PARTNER • 21+ T&amp;Cs APPLY
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleNextPromo}
-              className="text-[9px] text-slate-500 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-amber-300 cursor-pointer transition-colors"
-            >
-              Switch Promo ↻
-            </button>
-            <span className="hidden sm:inline">• Gamble Responsibly 1-800-GAMBLER</span>
+      <div className={`relative bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 dark:from-[#0d1322] dark:via-[#11182c] dark:to-[#0d1322] text-white rounded-xl px-3.5 py-2 shadow-sm border border-slate-700/60 dark:border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all text-xs ${className}`}>
+        {/* Left: Sponsored Partner Badge + Promo Details */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+            </span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-amber-400 font-mono">
+              PRO PARTNER
+            </span>
+          </div>
+
+          <div className="h-3 w-px bg-slate-600 hidden sm:block shrink-0" />
+
+          <div className="flex items-center gap-2 truncate">
+            <span className="font-bold text-white text-xs shrink-0">{promo.name}:</span>
+            <span className="text-slate-200 text-xs truncate font-medium">
+              {promo.offer}
+            </span>
+            <span className="hidden md:inline-flex items-center gap-1 font-mono text-[10px] bg-white/10 text-amber-300 px-1.5 py-0.2 rounded border border-white/15">
+              Code: <strong>{promo.code}</strong>
+            </span>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Promo Offer */}
-          <div className="flex items-center gap-3">
-            <div className={`h-9 w-9 rounded-lg ${promo.logoBg} flex items-center justify-center font-black text-white text-xs shrink-0 shadow-xs`}>
-              {promo.name.slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  {promo.name}
-                </span>
-                <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${promo.badgeStyle}`}>
-                  {promo.badge}
-                </span>
-              </div>
-              <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-amber-300 mt-0.5">
-                {promo.offer}
-              </div>
-            </div>
-          </div>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2 shrink-0 justify-end">
+          <button
+            onClick={handleNextPromo}
+            className="text-[10px] text-slate-300 hover:text-white transition-colors cursor-pointer hidden md:inline-flex items-center gap-1"
+            title="Next partner promo"
+          >
+            <span>Next ↻</span>
+          </button>
 
-          {/* Action Call to Action */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            <div className="text-right hidden md:block">
-              <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-mono">Use Promo Code</span>
-              <span className="text-xs font-mono font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-zinc-950 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-800">
-                {promo.code}
-              </span>
-            </div>
+          <a
+            href={promo.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+          >
+            <span>{promo.cta}</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
 
-            <a
-              href={promo.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-            >
-              <span>{promo.cta}</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
+          <button
+            onClick={handleDismiss}
+            className="p-1 rounded-md text-slate-400 hover:text-white transition-colors cursor-pointer"
+            title="Dismiss banner"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     );
@@ -202,33 +210,40 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   // 2. Native In-Feed Sponsored Card (Appears seamlessly between game cards)
   if (variant === 'native-card') {
     return (
-      <div className={`bg-gradient-to-r from-blue-50/40 via-white to-slate-50 dark:from-[#121829] dark:to-[#0f1422] border border-blue-200/90 dark:border-amber-500/40 rounded-xl p-3.5 shadow-xs transition-all hover:border-blue-300 dark:hover:border-amber-500/60 ${className}`}>
+      <div className={`bg-gradient-to-r from-slate-50 via-white to-blue-50/30 dark:from-[#0d1322] dark:via-[#11182c] dark:to-[#0f172a] border border-blue-200/80 dark:border-indigo-500/30 rounded-2xl p-3.5 sm:p-4 shadow-sm transition-all hover:border-blue-300 dark:hover:border-indigo-500/50 ${className}`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-lg ${promo.logoBg} flex items-center justify-center font-black text-white text-sm shrink-0 shadow-xs`}>
+          <div className="flex items-center gap-3.5">
+            <div className={`h-10 w-10 rounded-xl ${promo.logoBg} flex items-center justify-center font-black text-white text-sm shrink-0 shadow-sm`}>
               <Flame className="h-5 w-5" />
             </div>
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-blue-50 dark:bg-amber-500/20 text-blue-700 dark:text-amber-300 border border-blue-200 dark:border-amber-500/30">
-                  SPONSORED PROMO
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-blue-100 dark:bg-amber-400/15 text-blue-800 dark:text-amber-300 border border-blue-200 dark:border-amber-400/30">
+                  VERIFIED SPORTSBOOK LINE
                 </span>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">{promo.name}</span>
-                <span className="text-[10px] text-slate-500 dark:text-zinc-400 hidden sm:inline">• {promo.tagline}</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">{promo.name}</span>
+                <span className="text-[11px] text-slate-500 dark:text-zinc-400 hidden sm:inline">• {promo.tagline}</span>
               </div>
-              <div className="text-sm font-bold text-slate-900 dark:text-amber-300 mt-0.5">
+              <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-amber-300 mt-0.5">
                 {promo.offer}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 justify-end">
+          <div className="flex items-center gap-2 justify-end shrink-0">
+            <div className="text-right hidden md:block">
+              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono block">Promo Code</span>
+              <span className="text-xs font-mono font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-[#1a2235] px-2 py-0.5 rounded border border-slate-200 dark:border-[#2b3754]">
+                {promo.code}
+              </span>
+            </div>
+
             <a
               href={promo.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-all"
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all"
             >
               <span>{promo.cta}</span>
               <ExternalLink className="h-3 w-3" />
@@ -239,10 +254,10 @@ export const AdBanner: React.FC<AdBannerProps> = ({
     );
   }
 
-  // 3. Compact Box / Skyscraper (for sidebar or detail page)
+  // 3. Compact Box / Skyscraper
   if (variant === 'box') {
     return (
-      <div className={`bg-white dark:bg-[#111728] border border-slate-200 dark:border-amber-500/30 rounded-xl p-4 shadow-xs space-y-3 transition-colors duration-200 ${className}`}>
+      <div className={`bg-white dark:bg-[#111728] border border-slate-200 dark:border-indigo-500/30 rounded-2xl p-4 shadow-sm space-y-3 transition-colors duration-200 ${className}`}>
         <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-zinc-400 uppercase">
           <span className="text-blue-700 dark:text-amber-400 font-bold flex items-center gap-1">
             <Zap className="h-3 w-3" /> SPONSORED PROMO
@@ -252,7 +267,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({
 
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className={`h-6 w-6 rounded-md ${promo.logoBg} flex items-center justify-center font-black text-white text-[10px]`}>
+            <div className={`h-6 w-6 rounded-lg ${promo.logoBg} flex items-center justify-center font-black text-white text-[10px]`}>
               {promo.name.slice(0, 2)}
             </div>
             <span className="text-xs font-bold text-slate-900 dark:text-white">{promo.name}</span>
@@ -269,7 +284,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({
           href={promo.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-bold text-xs text-center block uppercase tracking-wider transition-all shadow-xs"
+          className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-black text-xs text-center block uppercase tracking-wider transition-all shadow-sm"
         >
           {promo.cta} ↗
         </a>
@@ -279,14 +294,14 @@ export const AdBanner: React.FC<AdBannerProps> = ({
 
   // 4. Sticky Bottom Bar
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#0d121f]/95 border-t border-slate-200 dark:border-amber-500/40 backdrop-blur-md py-2.5 px-4 shadow-lg animate-slide-up transition-colors duration-200">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-50 dark:bg-amber-500/20 text-blue-700 dark:text-amber-300 border border-blue-200 dark:border-amber-500/40 shrink-0">
-            HOT PROMO
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 dark:bg-[#070b14]/95 text-white border-t border-slate-800 dark:border-indigo-500/30 backdrop-blur-md py-2 px-3 sm:px-4 shadow-2xl animate-slide-up transition-colors duration-200">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 truncate">
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30 shrink-0">
+            EXCLUSIVE ODDS
           </span>
-          <div className="text-xs text-slate-800 dark:text-zinc-200">
-            <strong className="text-slate-900 dark:text-amber-300 font-bold">{promo.name}:</strong> {promo.offer} with code <strong className="font-mono text-slate-900 dark:text-white bg-slate-100 dark:bg-zinc-950 px-1 py-0.5 rounded border border-slate-200 dark:border-zinc-800">{promo.code}</strong>.
+          <div className="text-xs text-slate-200 truncate">
+            <strong className="text-white font-bold">{promo.name}:</strong> {promo.offer} with promo code <strong className="font-mono text-amber-300 bg-white/10 px-1 py-0.2 rounded border border-white/15">{promo.code}</strong>
           </div>
         </div>
 
@@ -295,14 +310,14 @@ export const AdBanner: React.FC<AdBannerProps> = ({
             href={promo.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-bold text-xs uppercase tracking-wider shadow-xs"
+            className="px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm transition-all"
           >
             Claim ↗
           </a>
           <button
-            onClick={() => setIsDismissed(true)}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
-            title="Dismiss Ad"
+            onClick={handleDismiss}
+            className="p-1 rounded-md text-slate-400 hover:text-white cursor-pointer transition-colors"
+            title="Dismiss banner"
           >
             <X className="h-4 w-4" />
           </button>
