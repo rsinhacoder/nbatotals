@@ -10,6 +10,7 @@ import {
   GraduationCap,
   ChevronDown,
   CalendarDays,
+  Award,
 } from 'lucide-react';
 import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -113,6 +114,14 @@ export const Header: React.FC<HeaderProps> = ({
               'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
           },
           {
+            id: 'results',
+            label: 'Model Results',
+            icon: Award,
+            badge: '61.7%',
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
             id: 'nhl-analyzer',
             label: 'Matchup Analyzer',
             icon: SlidersHorizontal,
@@ -147,6 +156,14 @@ export const Header: React.FC<HeaderProps> = ({
             badge: upcomingCount > 0 ? String(upcomingCount) : undefined,
             badgeColor:
               'bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+          },
+          {
+            id: 'results',
+            label: 'Model Results',
+            icon: Award,
+            badge: '61.7%',
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },
           {
             id: 'analyzer',
@@ -224,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 onSelectSport('nhl');
-                if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy') {
+                if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
                   setActiveTab('nhl-picks');
                 }
               }}

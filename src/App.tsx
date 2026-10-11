@@ -5,6 +5,7 @@ import { GameAnalyzerTab } from './components/GameAnalyzerTab';
 import { BetTrackerTab } from './components/BetTrackerTab';
 import { TrackRecordTab } from './components/TrackRecordTab';
 import { QuantAcademyTab } from './components/QuantAcademyTab';
+import { ModelResultsTab } from './components/ModelResultsTab';
 import { SyncModal } from './components/SyncModal';
 import { ToastContainer, type ToastMessage } from './components/Toast';
 import { AdBanner } from './components/AdBanner';
@@ -156,7 +157,7 @@ export function App() {
       localStorage.setItem(STORAGE_KEY_SPORT, sport);
     } catch (e) {}
     if (sport === 'nhl') {
-      if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy') {
+      if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
         setActiveTab('nhl-picks');
       }
     } else {
@@ -603,6 +604,14 @@ export function App() {
           />
         )}
 
+        {/* Universal Model Results & Performance Ledger (2024–25 Current Season) */}
+        {activeTab === 'results' && (
+          <ModelResultsTab
+            currentSport={currentSport}
+            onSelectSport={handleSelectSport}
+          />
+        )}
+
         {/* NBA Tab 2: Matchup Analyzer */}
         {activeTab === 'analyzer' && (
           <GameAnalyzerTab
@@ -735,6 +744,11 @@ export function App() {
                 <li>
                   <button onClick={() => setActiveTab('picks')} className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
                     Today&apos;s NBA Over/Under Slate
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => setActiveTab('results')} className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
+                    2024–25 Model Results &amp; Win Rate (Ledger)
                   </button>
                 </li>
                 <li>
