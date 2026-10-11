@@ -11,6 +11,7 @@ import {
   ChevronDown,
   CalendarDays,
   Award,
+  CheckCircle2,
 } from 'lucide-react';
 import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -115,9 +116,9 @@ export const Header: React.FC<HeaderProps> = ({
           },
           {
             id: 'results',
-            label: 'Model Results',
-            icon: Award,
-            badge: '61.7%',
+            label: 'Model Correctness',
+            icon: CheckCircle2,
+            badge: '61.7% Won',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },
@@ -159,9 +160,9 @@ export const Header: React.FC<HeaderProps> = ({
           },
           {
             id: 'results',
-            label: 'Model Results',
-            icon: Award,
-            badge: '61.7%',
+            label: 'Model Correctness',
+            icon: CheckCircle2,
+            badge: '61.7% Won',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },

@@ -37,6 +37,11 @@ export interface NBAGame {
   withinHistoricalMAE: boolean;
   forecastResult: 'SUCCESS' | 'FAILURE';
   
+  // Model Pick Correctness (vs Sportsbook Line)
+  modelPick?: 'UNDER' | 'OVER' | 'PASS';
+  modelPickText?: string;
+  pickCorrectness?: 'SUCCESS' | 'FAILURE' | 'PUSH' | 'NO PICK';
+  
   // Reference comparison
   referenceTotal?: number | null;
   modelMinusReference?: number | null;

@@ -1,4 +1,4 @@
-export type PickOutcome = 'WON' | 'LOST' | 'PUSH';
+export type PickOutcome = 'WON' | 'LOST' | 'PUSH' | 'SUCCESS' | 'FAILURE';
 
 export interface GradedModelPick {
   id: string;
@@ -36,8 +36,9 @@ export interface GradedModelPick {
   actualShots?: { away: number; home: number; total: number };
   actual1PScore?: { away: number; home: number; total: number };
 
-  // Grading
+  // Grading & Correctness
   outcome: PickOutcome;
+  correctness?: 'SUCCESS' | 'FAILURE' | 'PUSH';
   unitsStaked: number; // 1.0 or 2.0
   profitUnits: number; // Net PnL in units (e.g. +0.91 or -1.00)
   closingLineValue?: string; // CLV e.g. "+1.5 pts" or "+0.5 goals"

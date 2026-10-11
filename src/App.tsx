@@ -604,11 +604,12 @@ export function App() {
           />
         )}
 
-        {/* Universal Model Results & Performance Ledger (2024–25 Current Season) */}
+        {/* Universal Model Correctness & Performance Ledger (2024–25 Current Season) */}
         {activeTab === 'results' && (
           <ModelResultsTab
             currentSport={currentSport}
             onSelectSport={handleSelectSport}
+            historicalGames={processedGames}
           />
         )}
 
@@ -748,7 +749,7 @@ export function App() {
                 </li>
                 <li>
                   <button onClick={() => setActiveTab('results')} className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
-                    2024–25 Model Results &amp; Win Rate (Ledger)
+                    2024–25 Model Correctness &amp; Pick Accuracy
                   </button>
                 </li>
                 <li>

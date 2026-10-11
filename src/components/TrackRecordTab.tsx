@@ -60,7 +60,7 @@ export const TrackRecordTab: React.FC<TrackRecordTabProps> = ({
 
   // Search & Filter state for Game Database
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterResult, setFilterResult] = useState<'ALL' | 'SUCCESS' | 'FAILURE'>('ALL');
+  const [filterResult, setFilterResult] = useState<'ALL' | 'SUCCESS' | 'FAILURE' | 'PICK_SUCCESS' | 'PICK_FAILURE'>('ALL');
   const [selectedSeason, setSelectedSeason] = useState<string>('ALL');
   const [filterThreshold, setFilterThreshold] = useState<'ALL' | 'UNDER_47' | '47_OR_MORE'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,6 +92,8 @@ export const TrackRecordTab: React.FC<TrackRecordTabProps> = ({
 
       if (filterResult === 'SUCCESS' && game.forecastResult !== 'SUCCESS') return false;
       if (filterResult === 'FAILURE' && game.forecastResult !== 'FAILURE') return false;
+      if (filterResult === 'PICK_SUCCESS' && game.pickCorrectness !== 'SUCCESS') return false;
+      if (filterResult === 'PICK_FAILURE' && game.pickCorrectness !== 'FAILURE') return false;
 
       if (filterThreshold === 'UNDER_47' && !game.lowestUnder47) return false;
       if (filterThreshold === '47_OR_MORE' && game.lowestUnder47) return false;
@@ -278,8 +280,10 @@ export const TrackRecordTab: React.FC<TrackRecordTabProps> = ({
                 className="bg-slate-50 dark:bg-[#090d16] border border-slate-200 dark:border-[#1c2438] rounded-xl px-3 py-2 text-slate-700 dark:text-slate-300 focus:outline-none"
               >
                 <option value="ALL">All Outcomes</option>
-                <option value="SUCCESS">Success (Within MAE)</option>
-                <option value="FAILURE">Exceeded MAE Margin</option>
+                <option value="PICK_SUCCESS">🎯 Model Pick: SUCCESS</option>
+                <option value="PICK_FAILURE">🎯 Model Pick: FAILURE</option>
+                <option value="SUCCESS">Variance Error: Within MAE</option>
+                <option value="FAILURE">Variance Error: Exceeded MAE</option>
               </select>
 
               <select
@@ -308,8 +312,9 @@ export const TrackRecordTab: React.FC<TrackRecordTabProps> = ({
                     <th className="py-3 px-3 text-center">Actual Total</th>
                     <th className="py-3 px-3 text-center">Model Forecast</th>
                     <th className="py-3 px-3 text-center">Market Line</th>
+                    <th className="py-3 px-3 text-center">🎯 Model Pick</th>
+                    <th className="py-3 px-3 text-center">Pick Result</th>
                     <th className="py-3 px-3 text-center">Abs Error</th>
-                    <th className="py-3 px-3 text-center">Result</th>
                     <th className="py-3 px-4 text-right">Edit Line</th>
                   </tr>
                 </thead>
@@ -376,20 +381,38 @@ export const TrackRecordTab: React.FC<TrackRecordTabProps> = ({
                         )}
                       </td>
 
-                      <td className="py-3 px-3 text-center text-slate-500 dark:text-slate-400">
-                        {game.absoluteModelError.toFixed(1)} pts
+                      {/* 🎯 Model Pick */}
+                      <td className="py-3 px-3 text-center">
+                        {game.modelPick && game.modelPick !== 'PASS' ? (
+                          <span className="font-bold px-2 py-0.5 rounded text-[10px] font-mono bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                            {game.modelPickText}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-mono text-[10px]">--</span>
+                        )}
                       </td>
 
+                      {/* Pick Result: SUCCESS / FAILURE / PUSH */}
                       <td className="py-3 px-3 text-center font-sans">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            game.forecastResult === 'SUCCESS'
-                              ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
-                          }`}
-                        >
-                          {game.forecastResult}
-                        </span>
+                        {game.pickCorrectness === 'SUCCESS' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                            ✓ SUCCESS
+                          </span>
+                        ) : game.pickCorrectness === 'FAILURE' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-800">
+                            ✕ FAILURE
+                          </span>
+                        ) : game.pickCorrectness === 'PUSH' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
+                            — PUSH
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-mono text-[10px]">--</span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-3 text-center text-slate-500 dark:text-slate-400">
+                        {game.absoluteModelError.toFixed(1)} pts
                       </td>
 
                       <td className="py-3 px-4 text-right">

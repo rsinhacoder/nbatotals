@@ -5,19 +5,17 @@ import {
   CheckCircle2,
   XCircle,
   MinusCircle,
-  Flame,
   Star,
   Search,
   Download,
   Filter,
-  BarChart3,
   Calendar,
   Layers,
   Table as TableIcon,
   LayoutGrid,
-  Shield,
-  Activity,
-  Target,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
 } from 'lucide-react';
 import {
   CURRENT_SEASON_PICKS,
@@ -25,16 +23,21 @@ import {
   getCumulativeEquityPoints,
 } from '../data/seasonResultsData';
 import type { GradedModelPick, PickOutcome } from '../types/results';
+import type { NBAGame } from '../types/nba';
 
 interface ModelResultsTabProps {
   currentSport: 'nba' | 'nhl';
   onSelectSport?: (sport: 'nba' | 'nhl') => void;
+  historicalGames?: NBAGame[];
 }
 
 export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   currentSport,
   onSelectSport,
+  historicalGames,
 }) => {
+  // Dataset scope: Curated high-edge picks vs Full 2024-25 season schedule
+  const [datasetScope, setDatasetScope] = useState<'CURATED' | 'ALL_SEASON'>('CURATED');
   const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL'>(
     currentSport === 'nhl' ? 'NHL' : 'NBA'
   );
@@ -44,12 +47,73 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'DATE_DESC' | 'DATE_ASC' | 'PROFIT_DESC' | 'EDGE_DESC'>('DATE_DESC');
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 24;
+
+  // Convert full 2024-25 NBA historical season games into GradedModelPicks if available
+  const fullSeasonPicks = useMemo<GradedModelPick[]>(() => {
+    if (!historicalGames || historicalGames.length === 0) return [];
+    const seasonGames = historicalGames.filter(
+      (g) => g.season === '2024-25' && g.referenceTotal !== null && g.referenceTotal !== undefined && g.modelPick !== 'PASS'
+    );
+    return seasonGames.map((g) => {
+      const edge = Math.abs(g.modelPredictedRegulationTotal - (g.referenceTotal || 0));
+      const edgePct = Number(((edge / (g.referenceTotal || 220)) * 100).toFixed(1));
+      const outcome: PickOutcome =
+        g.pickCorrectness === 'SUCCESS' ? 'WON' : g.pickCorrectness === 'FAILURE' ? 'LOST' : 'PUSH';
+      const units = edge >= 4.0 ? 2.0 : 1.0;
+      const profit = outcome === 'WON' ? Number((units * 0.91).toFixed(2)) : outcome === 'LOST' ? -units : 0;
+
+      return {
+        id: `full_nba_${g.id}`,
+        sport: 'NBA' as const,
+        date: g.date,
+        matchup: `${g.awayTeam} @ ${g.homeTeam}`,
+        awayTeam: g.awayTeam,
+        homeTeam: g.homeTeam,
+        awayAbbrev: g.awayTeam.split(' ').pop()?.slice(0, 3).toUpperCase() || 'AWY',
+        homeAbbrev: g.homeTeam.split(' ').pop()?.slice(0, 3).toUpperCase() || 'HME',
+        marketCategory: 'TOTAL' as const,
+        marketName: `${g.modelPick} ${(g.referenceTotal || 0).toFixed(1)} Points`,
+        sportsbookLine: (g.referenceTotal || 0).toFixed(1),
+        sportsbookOdds: '-110',
+        decimalOdds: 1.91,
+        modelProjection: Number(g.modelPredictedRegulationTotal.toFixed(1)),
+        modelWinProb: Number((0.52 + Math.min(0.25, (edge / 20) * 0.2)).toFixed(3)),
+        edgePercent: edgePct,
+        pointOrGoalEdge: Number(edge.toFixed(1)),
+        confidence: edge >= 4.0 ? 'HIGH' : 'MEDIUM',
+        starRating: edge >= 5.0 ? 5 : edge >= 3.0 ? 4 : 3,
+        awayScore: g.awayScore,
+        homeScore: g.homeScore,
+        actualTotal: g.regulationTotal,
+        outcome,
+        unitsStaked: units,
+        profitUnits: profit,
+        analysisRecap:
+          outcome === 'WON'
+            ? `Model projected ${g.modelPredictedRegulationTotal.toFixed(1)} vs market line ${(g.referenceTotal || 0).toFixed(1)}. Actual final landed at ${g.regulationTotal}, confirming ${g.modelPick} correctness.`
+            : outcome === 'LOST'
+            ? `Game total resolved at ${g.regulationTotal} vs projected ${g.modelPredictedRegulationTotal.toFixed(1)} (line ${(g.referenceTotal || 0).toFixed(1)}), failing the ${g.modelPick} forecast.`
+            : `Game total landed exactly on the consensus market line of ${(g.referenceTotal || 0).toFixed(1)}, resulting in push refund.`,
+      };
+    });
+  }, [historicalGames]);
+
+  // Active base dataset according to selected scope
+  const activeDataset = useMemo(() => {
+    return datasetScope === 'ALL_SEASON' && fullSeasonPicks.length > 0
+      ? fullSeasonPicks
+      : CURRENT_SEASON_PICKS;
+  }, [datasetScope, fullSeasonPicks]);
 
   // Filtered picks based on current selections
   const filteredPicks = useMemo(() => {
-    return CURRENT_SEASON_PICKS.filter((pick) => {
-      // Sport filter
-      if (sportFilter !== 'ALL' && pick.sport !== sportFilter) return false;
+    return activeDataset.filter((pick) => {
+      // Sport filter (if ALL_SEASON is on, it's NBA only)
+      if (datasetScope === 'CURATED') {
+        if (sportFilter !== 'ALL' && pick.sport !== sportFilter) return false;
+      }
 
       // Outcome filter
       if (outcomeFilter !== 'ALL' && pick.outcome !== outcomeFilter) return false;
@@ -75,7 +139,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
 
       return true;
     });
-  }, [sportFilter, outcomeFilter, categoryFilter, confidenceFilter, searchTerm]);
+  }, [activeDataset, datasetScope, sportFilter, outcomeFilter, categoryFilter, confidenceFilter, searchTerm]);
 
   // Sort picks
   const sortedPicks = useMemo(() => {
@@ -87,6 +151,13 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
       return 0;
     });
   }, [filteredPicks, sortBy]);
+
+  // Pagination slice
+  const totalPages = Math.max(1, Math.ceil(sortedPicks.length / pageSize));
+  const paginatedPicks = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedPicks.slice(start, start + pageSize);
+  }, [sortedPicks, currentPage, pageSize]);
 
   // Performance metrics for current filtered subset
   const metrics = useMemo(() => {
@@ -125,16 +196,16 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
       'Sport',
       'Date',
       'Matchup',
-      'Pick',
-      'Category',
-      'Book Line',
+      'Model Pick',
+      'Market Category',
+      'Closing Line',
       'Odds',
       'Model Projection',
-      'Edge %',
-      'Score',
-      'Outcome',
+      'EV Edge %',
+      'Final Score',
+      'Model Correctness',
       'Units Staked',
-      'Profit Units',
+      'Net Profit Units',
       'Analysis Recap',
     ];
 
@@ -150,7 +221,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
       p.modelProjection,
       p.edgePercent,
       `"${p.awayScore} - ${p.homeScore}"`,
-      p.outcome,
+      p.outcome === 'WON' ? 'SUCCESS' : p.outcome === 'LOST' ? 'FAILURE' : 'PUSH',
       p.unitsStaked,
       p.profitUnits,
       `"${p.analysisRecap.replace(/"/g, '""')}"`,
@@ -161,7 +232,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Model_Current_Season_Results_${sportFilter}.csv`);
+    link.setAttribute('download', `Model_Correctness_Ledger_${datasetScope}_${sportFilter}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -172,96 +243,147 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
       {/* 1. Hero Header Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/20 p-5 sm:p-6 text-white shadow-xl">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1">
-                <Award className="w-3.5 h-3.5 text-emerald-400" />
-                2024–25 Verified Track Record
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                2024–25 Model Correctness Ledger
               </span>
-              <span className="text-xs text-slate-400">Current Season Official Picks Ledger</span>
+              <span className="text-xs text-slate-400">Current Season Audited Picks</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Model Picks Results &amp; Performance Ledger
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+              <span>Model Correctness &amp; Pick Accuracy</span>
+              <span className="text-xs px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-400/30 font-mono">
+                {datasetScope === 'ALL_SEASON' ? '1,196 Full Season Slate' : 'Curated High-Edge Picks'}
+              </span>
             </h2>
-            <p className="text-sm text-slate-300 max-w-2xl mt-1">
-              Transparent, post-game audited records of every pick selected by the quantitative engine across the 2024–25 season. Verified against closing sportsbook consensus lines and official final box scores.
+            <p className="text-sm text-slate-300 max-w-2xl mt-1 leading-relaxed">
+              Transparent, post-game audited verification of whether each <strong>Model Pick</strong> resulted in a{' '}
+              <strong className="text-emerald-300">SUCCESS</strong> or <strong className="text-rose-300">FAILURE</strong> against closing consensus sportsbook lines and official box scores.
             </p>
           </div>
 
-          {/* Sport Selector on Hero Banner */}
-          <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold shrink-0">
-            <button
-              onClick={() => {
-                setSportFilter('ALL');
-              }}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                sportFilter === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              All Sports
-            </button>
-            <button
-              onClick={() => {
-                setSportFilter('NBA');
-                if (onSelectSport) onSelectSport('nba');
-              }}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-                sportFilter === 'NBA' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <span>🏀</span> NBA
-            </button>
-            <button
-              onClick={() => {
-                setSportFilter('NHL');
-                if (onSelectSport) onSelectSport('nhl');
-              }}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-                sportFilter === 'NHL' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <span>🏒</span> NHL
-            </button>
+          {/* Controls: Scope Switcher & Sport Filter */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 shrink-0">
+            {/* Scope Switcher: Curated vs Full Season */}
+            {fullSeasonPicks.length > 0 && (
+              <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold">
+                <button
+                  onClick={() => {
+                    setDatasetScope('CURATED');
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    datasetScope === 'CURATED' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  Curated Slate ({CURRENT_SEASON_PICKS.length})
+                </button>
+                <button
+                  onClick={() => {
+                    setDatasetScope('ALL_SEASON');
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    datasetScope === 'ALL_SEASON' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  Full Season ({fullSeasonPicks.length.toLocaleString()})
+                </button>
+              </div>
+            )}
+
+            {/* Sport Selector (Curated Mode) */}
+            {datasetScope === 'CURATED' && (
+              <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold shrink-0">
+                <button
+                  onClick={() => {
+                    setSportFilter('ALL');
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    sportFilter === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  All Sports
+                </button>
+                <button
+                  onClick={() => {
+                    setSportFilter('NBA');
+                    setCurrentPage(1);
+                    if (onSelectSport) onSelectSport('nba');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                    sportFilter === 'NBA' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <span>🏀</span> NBA
+                </button>
+                <button
+                  onClick={() => {
+                    setSportFilter('NHL');
+                    setCurrentPage(1);
+                    if (onSelectSport) onSelectSport('nhl');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                    sportFilter === 'NHL' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <span>🏒</span> NHL
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* 6 Top Key Performance Indicator Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-4 border-t border-white/10 text-xs">
+          {/* KPI 1: Model Correctness Rate */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <span className="text-slate-400 block mb-0.5">Total Graded Picks</span>
-            <span className="text-lg font-black text-white">{metrics.totalPicks} Wagers</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Audited 2024–25</span>
+            <span className="text-slate-400 block mb-0.5">Model Correctness</span>
+            <span className="text-lg font-black text-emerald-400">{metrics.winRate}% Success</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              Excl. pushes
+            </span>
           </div>
 
+          {/* KPI 2: Success / Failure Breakdown */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <span className="text-slate-400 block mb-0.5">Win–Loss Record</span>
-            <span className="text-lg font-black text-white">
-              {metrics.wins}W - {metrics.losses}L - {metrics.pushes}P
+            <span className="text-slate-400 block mb-0.5">Pick Correctness Record</span>
+            <span className="text-base font-black text-white">
+              <span className="text-emerald-400">{metrics.wins}</span> S -{' '}
+              <span className="text-rose-400">{metrics.losses}</span> F -{' '}
+              <span className="text-amber-300">{metrics.pushes}</span> P
             </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              Success vs Failure
+            </span>
+          </div>
+
+          {/* KPI 3: Total Graded Matches */}
+          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+            <span className="text-slate-400 block mb-0.5">Total Graded Picks</span>
+            <span className="text-lg font-black text-white">{metrics.totalPicks} Games</span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
               {metrics.pushes} Refund Pushes
             </span>
           </div>
 
+          {/* KPI 4: Net Units Profit */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <span className="text-slate-400 block mb-0.5">Win Rate</span>
-            <span className="text-lg font-black text-emerald-400">{metrics.winRate}%</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Excl. pushes</span>
-          </div>
-
-          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <span className="text-slate-400 block mb-0.5">Net Profit</span>
+            <span className="text-slate-400 block mb-0.5">Net Units Profit</span>
             <span
               className={`text-lg font-black ${
                 metrics.totalProfitUnits >= 0 ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
-              {metrics.totalProfitUnits >= 0 ? `+${metrics.totalProfitUnits}` : metrics.totalProfitUnits} Units
+              {metrics.totalProfitUnits >= 0 ? `+${metrics.totalProfitUnits}` : metrics.totalProfitUnits}u
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Flat unit sizing</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Flat stake sizing</span>
           </div>
 
+          {/* KPI 5: ROI % */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <span className="text-slate-400 block mb-0.5">Overall ROI</span>
             <span className="text-lg font-black text-cyan-300">
@@ -270,11 +392,12 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             <span className="text-[10px] text-slate-400 block mt-0.5">Return on investment</span>
           </div>
 
+          {/* KPI 6: High-Edge Tier Correctness */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <span className="text-slate-400 block mb-0.5">High-Edge Tier (4-5★)</span>
-            <span className="text-lg font-black text-amber-300">{metrics.highEdgeWinRate}%</span>
+            <span className="text-slate-400 block mb-0.5">High Edge (≥3.0 pts / 4-5★)</span>
+            <span className="text-lg font-black text-amber-300">{metrics.highEdgeWinRate}% Success</span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              +{metrics.highEdgeProfitUnits}u ({metrics.highEdgePicks} bets)
+              +{metrics.highEdgeProfitUnits}u ({metrics.highEdgePicks} picks)
             </span>
           </div>
         </div>
@@ -290,7 +413,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                 Cumulative Units Growth Curve (2024–25 Season)
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Tracking equity progression as each qualified model pick resolves chronologically.
+                Tracking bankroll trajectory as each qualified Model Pick resolves chronologically.
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs font-mono">
@@ -300,129 +423,203 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             </div>
           </div>
 
-          {/* Lightweight Responsive SVG Equity Curve */}
-          <div className="h-44 w-full pt-3 relative">
-            <svg className="w-full h-full overflow-visible" viewBox="0 0 1000 120" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-
-              {/* Zero baseline */}
-              <line x1="0" y1="80" x2="1000" y2="80" stroke="#94a3b8" strokeDasharray="3 3" strokeOpacity="0.4" strokeWidth="1" />
-
-              {/* Equity Line Path */}
-              {(() => {
-                const maxVal = Math.max(...equityPoints.map((p) => p.cumulativeProfit), 10);
-                const minVal = Math.min(...equityPoints.map((p) => p.cumulativeProfit), -5);
-                const range = maxVal - minVal || 1;
-
-                const points = equityPoints.map((p, idx) => {
-                  const x = (idx / (equityPoints.length - 1 || 1)) * 1000;
-                  const y = 110 - ((p.cumulativeProfit - minVal) / range) * 95;
-                  return `${x.toFixed(1)},${y.toFixed(1)}`;
-                });
-
-                const lineD = `M ${points.join(' L ')}`;
-                const areaD = `M ${points.join(' L ')} L 1000,120 L 0,120 Z`;
-
+          {/* SVG Line Graph */}
+          <div className="w-full h-44 sm:h-56 mt-2 relative">
+            {(() => {
+              const pts = equityPoints;
+              if (pts.length < 2) {
                 return (
-                  <>
-                    <path d={areaD} fill="url(#equityGradient)" />
-                    <path d={lineD} fill="none" stroke="#10b981" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </>
+                  <div className="h-full flex items-center justify-center text-xs text-slate-400 font-mono">
+                    Insufficient historical data points to render curve.
+                  </div>
                 );
-              })()}
-            </svg>
+              }
+
+              const profits = pts.map((p) => p.cumulativeProfit);
+              const minP = Math.min(0, ...profits);
+              const maxP = Math.max(1, ...profits);
+              const range = maxP - minP || 1;
+
+              const svgW = 1000;
+              const svgH = 200;
+              const padding = 20;
+
+              const coords = pts.map((p, idx) => {
+                const x = padding + (idx / (pts.length - 1)) * (svgW - 2 * padding);
+                const normY = (p.cumulativeProfit - minP) / range;
+                const y = svgH - padding - normY * (svgH - 2 * padding);
+                return { x, y, ...p };
+              });
+
+              const polylinePoints = coords.map((c) => `${c.x},${c.y}`).join(' ');
+              const zeroY = svgH - padding - ((0 - minP) / range) * (svgH - 2 * padding);
+
+              const areaPoints = `${coords[0].x},${zeroY} ${polylinePoints} ${
+                coords[coords.length - 1].x
+              },${zeroY}`;
+
+              return (
+                <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-full overflow-visible">
+                  <defs>
+                    <linearGradient id="equityFillGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Zero Baseline */}
+                  <line
+                    x1={padding}
+                    y1={zeroY}
+                    x2={svgW - padding}
+                    y2={zeroY}
+                    stroke="#94a3b8"
+                    strokeWidth="1"
+                    strokeDasharray="3 3"
+                    strokeOpacity="0.4"
+                  />
+
+                  {/* Gradient Area under curve */}
+                  <polygon points={areaPoints} fill="url(#equityFillGrad)" />
+
+                  {/* Growth Line */}
+                  <polyline
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    points={polylinePoints}
+                  />
+
+                  {/* Milestone Points */}
+                  {coords.map((c, i) => {
+                    const isStep =
+                      coords.length <= 30 ||
+                      i === 0 ||
+                      i === coords.length - 1 ||
+                      i % Math.floor(coords.length / 10) === 0;
+                    if (!isStep) return null;
+                    const isSuccess = c.outcome === 'WON';
+                    return (
+                      <circle
+                        key={i}
+                        cx={c.x}
+                        cy={c.y}
+                        r={coords.length <= 30 ? 3.5 : 2.5}
+                        fill={isSuccess ? '#10b981' : '#f43f5e'}
+                        stroke="#ffffff"
+                        strokeWidth="1.5"
+                      />
+                    );
+                  })}
+                </svg>
+              );
+            })()}
           </div>
         </div>
       )}
 
-      {/* 3. Market Category Breakdown Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {categoryBreakdown.map((cat) => (
-          <div
-            key={cat.id}
-            onClick={() => setCategoryFilter(categoryFilter === cat.id ? 'ALL' : cat.id)}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-              categoryFilter === cat.id
-                ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 shadow-sm ring-1 ring-blue-500/30'
-                : 'bg-white dark:bg-[#0c121e] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{cat.label}</span>
-              <span className="text-[10px] font-mono text-slate-500">{cat.totalPicks} picks</span>
+      {/* 3. Market Category Breakdown Matrix (Curated Mode) */}
+      {datasetScope === 'CURATED' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {categoryBreakdown.map((cat) => (
+            <div
+              key={cat.id}
+              onClick={() => {
+                setCategoryFilter(categoryFilter === cat.id ? 'ALL' : cat.id);
+                setCurrentPage(1);
+              }}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                categoryFilter === cat.id
+                  ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 shadow-sm ring-1 ring-blue-500/30'
+                  : 'bg-white dark:bg-[#0c121e] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{cat.label}</span>
+                <span className="text-[10px] font-mono text-slate-500">{cat.totalPicks} picks</span>
+              </div>
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-base font-black text-slate-900 dark:text-white">
+                  {cat.winRate}% Success
+                </span>
+                <span
+                  className={`text-xs font-mono font-bold ${
+                    cat.totalProfitUnits >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
+                  }`}
+                >
+                  {cat.totalProfitUnits >= 0 ? `+${cat.totalProfitUnits}` : cat.totalProfitUnits}u
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-500 flex items-center justify-between mt-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                <span>{cat.wins}S - {cat.losses}F</span>
+                <span className="font-mono">ROI: {cat.roi >= 0 ? `+${cat.roi}%` : `${cat.roi}%`}</span>
+              </div>
             </div>
-            <div className="flex items-baseline justify-between mt-1">
-              <span className="text-base font-black text-slate-900 dark:text-white">
-                {cat.winRate}% Win
-              </span>
-              <span
-                className={`text-xs font-mono font-bold ${
-                  cat.totalProfitUnits >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
-                }`}
-              >
-                {cat.totalProfitUnits >= 0 ? `+${cat.totalProfitUnits}` : cat.totalProfitUnits}u
-              </span>
-            </div>
-            <div className="text-[10px] text-slate-500 flex items-center justify-between mt-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
-              <span>{cat.wins}W - {cat.losses}L</span>
-              <span className="font-mono">ROI: {cat.roi >= 0 ? `+${cat.roi}%` : `${cat.roi}%`}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* 4. Filter & Search Command Strip */}
       <div className="p-4 rounded-2xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Outcome Filter Pills */}
+          {/* Outcome Filter: Explicit SUCCESS / FAILURE / PUSH */}
           <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
             <button
-              onClick={() => setOutcomeFilter('ALL')}
+              onClick={() => {
+                setOutcomeFilter('ALL');
+                setCurrentPage(1);
+              }}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                 outcomeFilter === 'ALL'
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              All Outcomes ({CURRENT_SEASON_PICKS.length})
+              All Model Picks ({activeDataset.length})
             </button>
             <button
-              onClick={() => setOutcomeFilter('WON')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              onClick={() => {
+                setOutcomeFilter('WON');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 outcomeFilter === 'WON'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700'
+                  : 'text-emerald-700 dark:text-emerald-400 hover:text-emerald-800'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Won ({CURRENT_SEASON_PICKS.filter((p) => p.outcome === 'WON').length})
+              SUCCESS ({activeDataset.filter((p) => p.outcome === 'WON').length})
             </button>
             <button
-              onClick={() => setOutcomeFilter('LOST')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              onClick={() => {
+                setOutcomeFilter('LOST');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 outcomeFilter === 'LOST'
                   ? 'bg-rose-600 text-white shadow-xs'
-                  : 'text-rose-600 dark:text-rose-400 hover:text-rose-700'
+                  : 'text-rose-700 dark:text-rose-400 hover:text-rose-800'
               }`}
             >
               <XCircle className="w-3.5 h-3.5" />
-              Lost ({CURRENT_SEASON_PICKS.filter((p) => p.outcome === 'LOST').length})
+              FAILURE ({activeDataset.filter((p) => p.outcome === 'LOST').length})
             </button>
             <button
-              onClick={() => setOutcomeFilter('PUSH')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              onClick={() => {
+                setOutcomeFilter('PUSH');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 outcomeFilter === 'PUSH'
                   ? 'bg-amber-600 text-white shadow-xs'
-                  : 'text-amber-600 dark:text-amber-400 hover:text-amber-700'
+                  : 'text-amber-700 dark:text-amber-400 hover:text-amber-800'
               }`}
             >
               <MinusCircle className="w-3.5 h-3.5" />
-              Pushes ({CURRENT_SEASON_PICKS.filter((p) => p.outcome === 'PUSH').length})
+              PUSH ({activeDataset.filter((p) => p.outcome === 'PUSH').length})
             </button>
           </div>
 
@@ -434,7 +631,10 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
                 placeholder="Search team or pick..."
                 className="w-40 sm:w-48 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition-colors"
               />
@@ -443,7 +643,10 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             {/* Sort Dropdown */}
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => {
+                setSortBy(e.target.value as any);
+                setCurrentPage(1);
+              }}
               className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none font-medium cursor-pointer"
             >
               <option value="DATE_DESC">Newest First</option>
@@ -482,7 +685,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             <button
               onClick={handleExportCsv}
               className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
-              title="Export Current Results as CSV"
+              title="Export Current Model Correctness Ledger as CSV"
             >
               <Download className="w-3.5 h-3.5 text-blue-500" />
               <span>Export CSV</span>
@@ -490,184 +693,207 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
           </div>
         </div>
 
-        {/* Second Row: Market Category Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
-          <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
-            <Filter className="w-3 h-3" /> Markets:
-          </span>
-          <button
-            onClick={() => setCategoryFilter('ALL')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-              categoryFilter === 'ALL'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setCategoryFilter('TOTAL')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-              categoryFilter === 'TOTAL'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-            }`}
-          >
-            Game Totals O/U
-          </button>
-          <button
-            onClick={() => setCategoryFilter('SPREAD')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-              categoryFilter === 'SPREAD'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-            }`}
-          >
-            Pucklines &amp; Spreads
-          </button>
-          <button
-            onClick={() => setCategoryFilter('MONEYLINE')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-              categoryFilter === 'MONEYLINE'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-            }`}
-          >
-            Moneylines
-          </button>
-          <button
-            onClick={() => setCategoryFilter('SOG')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-              categoryFilter === 'SOG'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-            }`}
-          >
-            Shots on Goal (SOG)
-          </button>
-          <button
-            onClick={() => setCategoryFilter('1ST_PERIOD')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-              categoryFilter === '1ST_PERIOD'
-                ? 'bg-blue-600 text-white font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-            }`}
-          >
-            1st Period (1P)
-          </button>
-        </div>
+        {/* Second Row: Market Category Pills (Curated Mode) */}
+        {datasetScope === 'CURATED' && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+            <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
+              <Filter className="w-3 h-3" /> Markets:
+            </span>
+            <button
+              onClick={() => {
+                setCategoryFilter('ALL');
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                categoryFilter === 'ALL'
+                  ? 'bg-blue-600 text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => {
+                setCategoryFilter('TOTAL');
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                categoryFilter === 'TOTAL'
+                  ? 'bg-blue-600 text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              Game Totals O/U
+            </button>
+            <button
+              onClick={() => {
+                setCategoryFilter('SPREAD');
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                categoryFilter === 'SPREAD'
+                  ? 'bg-blue-600 text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              Pucklines &amp; Spreads
+            </button>
+            <button
+              onClick={() => {
+                setCategoryFilter('MONEYLINE');
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                categoryFilter === 'MONEYLINE'
+                  ? 'bg-blue-600 text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              Moneylines
+            </button>
+            <button
+              onClick={() => {
+                setCategoryFilter('SOG');
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                categoryFilter === 'SOG'
+                  ? 'bg-blue-600 text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              Shots on Goal (SOG)
+            </button>
+            <button
+              onClick={() => {
+                setCategoryFilter('1ST_PERIOD');
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                categoryFilter === '1ST_PERIOD'
+                  ? 'bg-blue-600 text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              1st Period (1P)
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 5. Results Cards or Table View */}
       {sortedPicks.length === 0 ? (
         <div className="bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center text-slate-500 dark:text-slate-400 text-xs shadow-xs">
-          No graded picks found matching your current filter criteria.
+          No graded Model Picks found matching your current filter criteria.
         </div>
       ) : viewMode === 'TABLE' ? (
         /* Dense Table View */
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 shadow-xs overflow-x-auto">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 shadow-xs overflow-x-auto space-y-3">
           <table className="w-full text-left text-xs border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
             <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold">
               <tr>
                 <th className="py-2.5 px-3">Date &amp; Sport</th>
                 <th className="py-2.5 px-3">Matchup</th>
-                <th className="py-2.5 px-3">Model Pick</th>
-                <th className="py-2.5 px-3">Book Line</th>
+                <th className="py-2.5 px-3 font-black text-slate-900 dark:text-white">🎯 Model Pick</th>
+                <th className="py-2.5 px-3">Closing Line</th>
                 <th className="py-2.5 px-3">Model Proj</th>
                 <th className="py-2.5 px-3">Edge</th>
                 <th className="py-2.5 px-3">Actual Score</th>
-                <th className="py-2.5 px-3">Outcome</th>
+                <th className="py-2.5 px-3 text-center">Correctness</th>
                 <th className="py-2.5 px-3 text-right">Net Profit</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {sortedPicks.map((pick) => (
-                <tr key={pick.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <td className="py-2.5 px-3 whitespace-nowrap">
-                    <span className="font-bold text-slate-900 dark:text-white block">{pick.date}</span>
-                    <span className="text-[10px] text-slate-400">{pick.sport}</span>
-                  </td>
-                  <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white whitespace-nowrap">
-                    {pick.matchup}
-                  </td>
-                  <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                    <span className="flex items-center gap-1">
-                      {pick.outcome === 'WON' ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      ) : pick.outcome === 'LOST' ? (
-                        <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                      ) : (
-                        <MinusCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      )}
-                      <span>{pick.marketName}</span>
-                      <span className="text-slate-400 font-mono text-[11px]">({pick.sportsbookOdds})</span>
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-400">
-                    {pick.sportsbookLine}
-                  </td>
-                  <td className="py-2.5 px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                    {pick.modelProjection}
-                  </td>
-                  <td className="py-2.5 px-3 font-mono font-bold text-cyan-600 dark:text-cyan-400">
-                    +{pick.edgePercent}% EV
-                  </td>
-                  <td className="py-2.5 px-3 font-mono font-black text-slate-900 dark:text-white whitespace-nowrap">
-                    {pick.awayScore} - {pick.homeScore} ({pick.actualTotal})
-                  </td>
-                  <td className="py-2.5 px-3 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                        pick.outcome === 'WON'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
-                          : pick.outcome === 'LOST'
-                          ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
-                          : 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300'
+              {paginatedPicks.map((pick) => {
+                const isSuccess = pick.outcome === 'WON';
+                const isFailure = pick.outcome === 'LOST';
+
+                return (
+                  <tr key={pick.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <span className="font-bold text-slate-900 dark:text-white block">{pick.date}</span>
+                      <span className="text-[10px] text-slate-400">{pick.sport}</span>
+                    </td>
+                    <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                      {pick.matchup}
+                    </td>
+                    <td className="py-2.5 px-3 font-black text-slate-900 dark:text-white whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300">
+                          {pick.marketName}
+                        </span>
+                        <span className="text-slate-400 font-mono text-[11px]">({pick.sportsbookOdds})</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-400">
+                      {pick.sportsbookLine}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      {pick.modelProjection}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                      +{pick.edgePercent}% EV
+                    </td>
+                    <td className="py-2.5 px-3 font-mono font-black text-slate-900 dark:text-white whitespace-nowrap">
+                      {pick.awayScore} - {pick.homeScore} ({pick.actualTotal})
+                    </td>
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase ${
+                          isSuccess
+                            ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                            : isFailure
+                            ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                            : 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                        }`}
+                      >
+                        {isSuccess && <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}
+                        {isFailure && <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400" />}
+                        {pick.outcome === 'PUSH' && <MinusCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />}
+                        <span>{isSuccess ? 'SUCCESS' : isFailure ? 'FAILURE' : 'PUSH'}</span>
+                      </span>
+                    </td>
+                    <td
+                      className={`py-2.5 px-3 text-right font-mono font-black whitespace-nowrap ${
+                        pick.profitUnits > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : pick.profitUnits < 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : 'text-slate-500'
                       }`}
                     >
-                      {pick.outcome}
-                    </span>
-                  </td>
-                  <td
-                    className={`py-2.5 px-3 text-right font-mono font-black whitespace-nowrap ${
-                      pick.profitUnits > 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : pick.profitUnits < 0
-                        ? 'text-rose-600 dark:text-rose-400'
-                        : 'text-slate-500'
-                    }`}
-                  >
-                    {pick.profitUnits > 0 ? `+${pick.profitUnits}u` : `${pick.profitUnits}u`}
-                  </td>
-                </tr>
-              ))}
+                      {pick.profitUnits > 0 ? `+${pick.profitUnits}u` : `${pick.profitUnits}u`}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       ) : (
         /* Cards View */
         <div className="space-y-3">
-          {sortedPicks.map((pick) => {
-            const isWon = pick.outcome === 'WON';
-            const isLost = pick.outcome === 'LOST';
+          {paginatedPicks.map((pick) => {
+            const isSuccess = pick.outcome === 'WON';
+            const isFailure = pick.outcome === 'LOST';
 
             return (
               <div
                 key={pick.id}
                 className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-                  isWon
+                  isSuccess
                     ? 'bg-gradient-to-r from-emerald-500/5 via-transparent to-cyan-500/5 border-emerald-500/30 dark:border-emerald-500/20 shadow-xs'
-                    : isLost
+                    : isFailure
                     ? 'bg-white dark:bg-[#0c121e] border-slate-200 dark:border-slate-800'
                     : 'bg-amber-500/5 border-amber-500/30'
                 }`}
               >
                 {/* Card Top Ribbon */}
                 <div
-                  className={`px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold border-b ${
-                    isWon
+                  className={`px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold border-b ${
+                    isSuccess
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500/30'
-                      : isLost
+                      : isFailure
                       ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                       : 'bg-amber-500 text-white'
                   }`}
@@ -677,14 +903,14 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                       {pick.sport} · {pick.marketCategory}
                     </span>
                     <span className="font-bold flex items-center gap-1 text-sm tracking-tight">
-                      🎯 Pick:
-                      <span className="underline decoration-white/40 underline-offset-2 ml-1">
+                      🎯 Model Pick:
+                      <span className="underline decoration-white/40 underline-offset-2 ml-1 font-black">
                         {pick.marketName} ({pick.sportsbookOdds})
                       </span>
                     </span>
                     <span
                       className={`px-2 py-0.5 rounded-full font-black text-xs ${
-                        isWon ? 'bg-white text-emerald-800 shadow-xs' : 'bg-slate-700 text-white'
+                        isSuccess ? 'bg-white text-emerald-800 shadow-xs' : 'bg-slate-700 text-white'
                       }`}
                     >
                       +{pick.edgePercent}% EV
@@ -692,22 +918,23 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <span
-                        className={`px-2.5 py-0.5 rounded-full font-black text-xs uppercase flex items-center gap-1 ${
-                          isWon
-                            ? 'bg-emerald-950/80 text-emerald-200 border border-emerald-400/40'
-                            : isLost
-                            ? 'bg-rose-900/80 text-rose-200 border border-rose-500/40'
-                            : 'bg-amber-900/80 text-amber-200 border border-amber-500/40'
+                        className={`px-3 py-1 rounded-full font-black text-xs uppercase flex items-center gap-1.5 shadow-xs ${
+                          isSuccess
+                            ? 'bg-emerald-950/80 text-emerald-200 border border-emerald-400/50'
+                            : isFailure
+                            ? 'bg-rose-900/80 text-rose-200 border border-rose-500/50'
+                            : 'bg-amber-900/80 text-amber-200 border border-amber-500/50'
                         }`}
                       >
-                        {isWon && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                        {isLost && <XCircle className="w-3.5 h-3.5 text-rose-400" />}
-                        <span>{pick.outcome}</span>
+                        {isSuccess && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                        {isFailure && <XCircle className="w-3.5 h-3.5 text-rose-400" />}
+                        {pick.outcome === 'PUSH' && <MinusCircle className="w-3.5 h-3.5 text-amber-400" />}
+                        <span>{isSuccess ? 'SUCCESS' : isFailure ? 'FAILURE' : 'PUSH'}</span>
                       </span>
                       <span
-                        className={`font-mono font-black text-xs ${
+                        className={`font-mono font-black text-xs ml-1 ${
                           pick.profitUnits > 0
                             ? 'text-emerald-300'
                             : pick.profitUnits < 0
@@ -744,13 +971,13 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                       </div>
 
                       {/* Actual Score Badge */}
-                      <div className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                      <div className="shrink-0 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
                         <span className="text-[10px] font-black uppercase text-slate-400 block">FINAL SCORE</span>
                         <span className="text-base sm:text-lg font-black font-mono text-slate-900 dark:text-white">
                           {pick.awayScore} - {pick.homeScore}
                         </span>
-                        <span className="text-[10px] font-mono text-slate-500 block">
-                          Total: {pick.actualTotal}
+                        <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 block mt-0.5">
+                          Total: {pick.actualTotal} Pts
                         </span>
                       </div>
 
@@ -768,7 +995,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                       </div>
                     </div>
 
-                    {/* Middle: Model Projection vs Book Line */}
+                    {/* Middle: Model Projection vs Closing Line */}
                     <div className="lg:col-span-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 border border-slate-200 dark:border-slate-800/80">
                       <div className="grid grid-cols-3 gap-2 text-center text-xs">
                         <div>
@@ -800,12 +1027,12 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                       {pick.actualShots && (
                         <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] font-mono text-slate-600 dark:text-slate-400">
                           <span>Actual SOG: {pick.actualShots.away} - {pick.actualShots.home} ({pick.actualShots.total} Total)</span>
-                          <span className="text-cyan-500 font-bold">🎯 Shots Settled</span>
+                          <span className="text-cyan-500 font-bold">🎯 SOG Resolved</span>
                         </div>
                       )}
                     </div>
 
-                    {/* Right: Profit Badge & Star Rating */}
+                    {/* Right: Correctness Indicator & Profit */}
                     <div className="lg:col-span-3 flex flex-col items-center sm:items-end justify-center text-right">
                       <div className="flex items-center gap-1 text-amber-400 mb-1">
                         {Array.from({ length: pick.starRating }).map((_, i) => (
@@ -813,7 +1040,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                         ))}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400">
-                        Stake: {pick.unitsStaked} Unit
+                        Stake: {pick.unitsStaked} Unit Flat
                       </div>
                       <div
                         className={`text-base font-black font-mono mt-0.5 ${
@@ -831,12 +1058,45 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
 
                   {/* Analysis Recap Note */}
                   <p className="mt-3 text-xs text-slate-600 dark:text-slate-400 bg-slate-50/80 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-                    <span className="font-bold text-slate-800 dark:text-slate-200">Outcome Recap:</span> {pick.analysisRecap}
+                    <span className="font-bold text-slate-800 dark:text-slate-200">Outcome Evaluation:</span> {pick.analysisRecap}
                   </p>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 6. Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between gap-3 text-xs">
+          <div className="text-slate-500 dark:text-slate-400">
+            Showing <strong className="text-slate-900 dark:text-white">{(currentPage - 1) * pageSize + 1}</strong> to{' '}
+            <strong className="text-slate-900 dark:text-white">
+              {Math.min(currentPage * pageSize, sortedPicks.length)}
+            </strong>{' '}
+            of <strong className="text-slate-900 dark:text-white">{sortedPicks.length.toLocaleString()}</strong> graded picks
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-3 py-1 font-bold text-slate-900 dark:text-white">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -89,6 +89,35 @@ export function processGameMetrics(
     referenceComparison = Math.abs(modelMinusReference) <= benchmarkMae ? 'CLOSE' : 'LARGE GAP';
   }
 
+  // Model Pick Correctness Evaluation (vs Sportsbook Consensus Line)
+  let modelPick: 'UNDER' | 'OVER' | 'PASS' = 'PASS';
+  let modelPickText = 'No Pick';
+  let pickCorrectness: 'SUCCESS' | 'FAILURE' | 'PUSH' | 'NO PICK' = 'NO PICK';
+
+  if (refTotal !== null && !isNaN(refTotal)) {
+    if (modelPredictedRegulationTotal < refTotal) {
+      modelPick = 'UNDER';
+      modelPickText = `UNDER ${refTotal.toFixed(1)}`;
+      if (regulationTotal < refTotal) {
+        pickCorrectness = 'SUCCESS';
+      } else if (regulationTotal > refTotal) {
+        pickCorrectness = 'FAILURE';
+      } else {
+        pickCorrectness = 'PUSH';
+      }
+    } else if (modelPredictedRegulationTotal > refTotal) {
+      modelPick = 'OVER';
+      modelPickText = `OVER ${refTotal.toFixed(1)}`;
+      if (regulationTotal > refTotal) {
+        pickCorrectness = 'SUCCESS';
+      } else if (regulationTotal < refTotal) {
+        pickCorrectness = 'FAILURE';
+      } else {
+        pickCorrectness = 'PUSH';
+      }
+    }
+  }
+
   const lowestBucket = getLowestBucket(lowestQuarter);
 
   return {
@@ -125,6 +154,9 @@ export function processGameMetrics(
     within15,
     withinHistoricalMAE,
     forecastResult,
+    modelPick,
+    modelPickText,
+    pickCorrectness,
     referenceTotal: refTotal,
     modelMinusReference,
     referenceComparison,
