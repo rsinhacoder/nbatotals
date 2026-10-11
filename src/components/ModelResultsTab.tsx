@@ -31,16 +31,26 @@ interface ModelResultsTabProps {
   historicalGames?: NBAGame[];
 }
 
+const MONTH_OPTIONS = [
+  { id: 'ALL', label: 'Full 2024–25 Season' },
+  { id: '2024-10', label: 'Oct 2024' },
+  { id: '2024-11', label: 'Nov 2024' },
+  { id: '2024-12', label: 'Dec 2024' },
+  { id: '2025-01', label: 'Jan 2025' },
+  { id: '2025-02', label: 'Feb 2025' },
+  { id: '2025-03', label: 'Mar 2025' },
+  { id: '2025-04', label: 'Apr 2025' },
+];
+
 export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   currentSport,
   onSelectSport,
-  historicalGames,
 }) => {
-  // Dataset scope: Curated high-edge picks vs Full 2024-25 season schedule
-  const [datasetScope, setDatasetScope] = useState<'CURATED' | 'ALL_SEASON'>('CURATED');
+  // Filters
   const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL'>(
     currentSport === 'nhl' ? 'NHL' : 'NBA'
   );
+  const [monthFilter, setMonthFilter] = useState<string>('ALL');
   const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'WON' | 'LOST' | 'PUSH'>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'TOTAL' | 'SPREAD' | 'MONEYLINE' | 'SOG' | '1ST_PERIOD'>('ALL');
   const [confidenceFilter, setConfidenceFilter] = useState<'ALL' | 'HIGH_ONLY'>('ALL');
@@ -48,72 +58,16 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   const [sortBy, setSortBy] = useState<'DATE_DESC' | 'DATE_ASC' | 'PROFIT_DESC' | 'EDGE_DESC'>('DATE_DESC');
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 24;
-
-  // Convert full 2024-25 NBA historical season games into GradedModelPicks if available
-  const fullSeasonPicks = useMemo<GradedModelPick[]>(() => {
-    if (!historicalGames || historicalGames.length === 0) return [];
-    const seasonGames = historicalGames.filter(
-      (g) => g.season === '2024-25' && g.referenceTotal !== null && g.referenceTotal !== undefined && g.modelPick !== 'PASS'
-    );
-    return seasonGames.map((g) => {
-      const edge = Math.abs(g.modelPredictedRegulationTotal - (g.referenceTotal || 0));
-      const edgePct = Number(((edge / (g.referenceTotal || 220)) * 100).toFixed(1));
-      const outcome: PickOutcome =
-        g.pickCorrectness === 'SUCCESS' ? 'WON' : g.pickCorrectness === 'FAILURE' ? 'LOST' : 'PUSH';
-      const units = edge >= 4.0 ? 2.0 : 1.0;
-      const profit = outcome === 'WON' ? Number((units * 0.91).toFixed(2)) : outcome === 'LOST' ? -units : 0;
-
-      return {
-        id: `full_nba_${g.id}`,
-        sport: 'NBA' as const,
-        date: g.date,
-        matchup: `${g.awayTeam} @ ${g.homeTeam}`,
-        awayTeam: g.awayTeam,
-        homeTeam: g.homeTeam,
-        awayAbbrev: g.awayTeam.split(' ').pop()?.slice(0, 3).toUpperCase() || 'AWY',
-        homeAbbrev: g.homeTeam.split(' ').pop()?.slice(0, 3).toUpperCase() || 'HME',
-        marketCategory: 'TOTAL' as const,
-        marketName: `${g.modelPick} ${(g.referenceTotal || 0).toFixed(1)} Points`,
-        sportsbookLine: (g.referenceTotal || 0).toFixed(1),
-        sportsbookOdds: '-110',
-        decimalOdds: 1.91,
-        modelProjection: Number(g.modelPredictedRegulationTotal.toFixed(1)),
-        modelWinProb: Number((0.52 + Math.min(0.25, (edge / 20) * 0.2)).toFixed(3)),
-        edgePercent: edgePct,
-        pointOrGoalEdge: Number(edge.toFixed(1)),
-        confidence: edge >= 4.0 ? 'HIGH' : 'MEDIUM',
-        starRating: edge >= 5.0 ? 5 : edge >= 3.0 ? 4 : 3,
-        awayScore: g.awayScore,
-        homeScore: g.homeScore,
-        actualTotal: g.regulationTotal,
-        outcome,
-        unitsStaked: units,
-        profitUnits: profit,
-        analysisRecap:
-          outcome === 'WON'
-            ? `Model projected ${g.modelPredictedRegulationTotal.toFixed(1)} vs market line ${(g.referenceTotal || 0).toFixed(1)}. Actual final landed at ${g.regulationTotal}, confirming ${g.modelPick} correctness.`
-            : outcome === 'LOST'
-            ? `Game total resolved at ${g.regulationTotal} vs projected ${g.modelPredictedRegulationTotal.toFixed(1)} (line ${(g.referenceTotal || 0).toFixed(1)}), failing the ${g.modelPick} forecast.`
-            : `Game total landed exactly on the consensus market line of ${(g.referenceTotal || 0).toFixed(1)}, resulting in push refund.`,
-      };
-    });
-  }, [historicalGames]);
-
-  // Active base dataset according to selected scope
-  const activeDataset = useMemo(() => {
-    return datasetScope === 'ALL_SEASON' && fullSeasonPicks.length > 0
-      ? fullSeasonPicks
-      : CURRENT_SEASON_PICKS;
-  }, [datasetScope, fullSeasonPicks]);
+  const pageSize = 25;
 
   // Filtered picks based on current selections
   const filteredPicks = useMemo(() => {
-    return activeDataset.filter((pick) => {
-      // Sport filter (if ALL_SEASON is on, it's NBA only)
-      if (datasetScope === 'CURATED') {
-        if (sportFilter !== 'ALL' && pick.sport !== sportFilter) return false;
-      }
+    return CURRENT_SEASON_PICKS.filter((pick) => {
+      // Sport filter
+      if (sportFilter !== 'ALL' && pick.sport !== sportFilter) return false;
+
+      // Month filter
+      if (monthFilter !== 'ALL' && !pick.date.startsWith(monthFilter)) return false;
 
       // Outcome filter
       if (outcomeFilter !== 'ALL' && pick.outcome !== outcomeFilter) return false;
@@ -139,7 +93,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
 
       return true;
     });
-  }, [activeDataset, datasetScope, sportFilter, outcomeFilter, categoryFilter, confidenceFilter, searchTerm]);
+  }, [sportFilter, monthFilter, outcomeFilter, categoryFilter, confidenceFilter, searchTerm]);
 
   // Sort picks
   const sortedPicks = useMemo(() => {
@@ -168,6 +122,10 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   const equityPoints = useMemo(() => {
     return getCumulativeEquityPoints(filteredPicks);
   }, [filteredPicks]);
+
+  // Total sport counts in database
+  const totalNBAPicks = useMemo(() => CURRENT_SEASON_PICKS.filter((p) => p.sport === 'NBA').length, []);
+  const totalNHLPicks = useMemo(() => CURRENT_SEASON_PICKS.filter((p) => p.sport === 'NHL').length, []);
 
   // Market Category breakdown
   const categoryBreakdown = useMemo(() => {
@@ -232,7 +190,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Model_Correctness_Ledger_${datasetScope}_${sportFilter}.csv`);
+    link.setAttribute('download', `Model_Correctness_Ledger_2024_25_${sportFilter}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -248,92 +206,62 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                2024–25 Model Correctness Ledger
+                2024–25 Current Season Performance Ledger
               </span>
-              <span className="text-xs text-slate-400">Current Season Audited Picks</span>
+              <span className="text-xs text-slate-400 font-mono">
+                {CURRENT_SEASON_PICKS.length.toLocaleString()} Total Graded Matches (Oct 2024 – Apr 2025)
+              </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
               <span>Model Correctness &amp; Pick Accuracy</span>
-              <span className="text-xs px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-400/30 font-mono">
-                {datasetScope === 'ALL_SEASON' ? '1,196 Full Season Slate' : 'Curated High-Edge Picks'}
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 font-mono font-bold">
+                {sportFilter === 'ALL' ? 'NBA & NHL Combined' : sportFilter === 'NBA' ? 'NBA Regular Season' : 'NHL Regular Season'}
               </span>
             </h2>
             <p className="text-sm text-slate-300 max-w-2xl mt-1 leading-relaxed">
-              Transparent, post-game audited verification of whether each <strong>Model Pick</strong> resulted in a{' '}
-              <strong className="text-emerald-300">SUCCESS</strong> or <strong className="text-rose-300">FAILURE</strong> against closing consensus sportsbook lines and official box scores.
+              Complete, post-game audited records across the entire <strong>2024–25 Season</strong>. Evaluates whether each{' '}
+              <strong>Model Pick</strong> resulted in a <strong className="text-emerald-300">SUCCESS</strong> or{' '}
+              <strong className="text-rose-300">FAILURE</strong> against closing consensus sportsbook lines and official final scores.
             </p>
           </div>
 
-          {/* Controls: Scope Switcher & Sport Filter */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 shrink-0">
-            {/* Scope Switcher: Curated vs Full Season */}
-            {fullSeasonPicks.length > 0 && (
-              <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold">
-                <button
-                  onClick={() => {
-                    setDatasetScope('CURATED');
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    datasetScope === 'CURATED' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  Curated Slate ({CURRENT_SEASON_PICKS.length})
-                </button>
-                <button
-                  onClick={() => {
-                    setDatasetScope('ALL_SEASON');
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    datasetScope === 'ALL_SEASON' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  Full Season ({fullSeasonPicks.length.toLocaleString()})
-                </button>
-              </div>
-            )}
-
-            {/* Sport Selector (Curated Mode) */}
-            {datasetScope === 'CURATED' && (
-              <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold shrink-0">
-                <button
-                  onClick={() => {
-                    setSportFilter('ALL');
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    sportFilter === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  All Sports
-                </button>
-                <button
-                  onClick={() => {
-                    setSportFilter('NBA');
-                    setCurrentPage(1);
-                    if (onSelectSport) onSelectSport('nba');
-                  }}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-                    sportFilter === 'NBA' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <span>🏀</span> NBA
-                </button>
-                <button
-                  onClick={() => {
-                    setSportFilter('NHL');
-                    setCurrentPage(1);
-                    if (onSelectSport) onSelectSport('nhl');
-                  }}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-                    sportFilter === 'NHL' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <span>🏒</span> NHL
-                </button>
-              </div>
-            )}
+          {/* Sport Selector on Hero Banner */}
+          <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs font-bold shrink-0">
+            <button
+              onClick={() => {
+                setSportFilter('ALL');
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                sportFilter === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              All Sports ({CURRENT_SEASON_PICKS.length.toLocaleString()})
+            </button>
+            <button
+              onClick={() => {
+                setSportFilter('NBA');
+                setCurrentPage(1);
+                if (onSelectSport) onSelectSport('nba');
+              }}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                sportFilter === 'NBA' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <span>🏀</span> NBA ({totalNBAPicks.toLocaleString()})
+            </button>
+            <button
+              onClick={() => {
+                setSportFilter('NHL');
+                setCurrentPage(1);
+                if (onSelectSport) onSelectSport('nhl');
+              }}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                sportFilter === 'NHL' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <span>🏒</span> NHL ({totalNHLPicks.toLocaleString()})
+            </button>
           </div>
         </div>
 
@@ -363,8 +291,8 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
 
           {/* KPI 3: Total Graded Matches */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <span className="text-slate-400 block mb-0.5">Total Graded Picks</span>
-            <span className="text-lg font-black text-white">{metrics.totalPicks} Games</span>
+            <span className="text-slate-400 block mb-0.5">Season Graded Picks</span>
+            <span className="text-lg font-black text-white">{metrics.totalPicks.toLocaleString()} Games</span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
               {metrics.pushes} Refund Pushes
             </span>
@@ -378,9 +306,9 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                 metrics.totalProfitUnits >= 0 ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
-              {metrics.totalProfitUnits >= 0 ? `+${metrics.totalProfitUnits}` : metrics.totalProfitUnits}u
+              {metrics.totalProfitUnits >= 0 ? `+${metrics.totalProfitUnits.toFixed(1)}` : metrics.totalProfitUnits.toFixed(1)}u
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Flat stake sizing</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">1u flat staking</span>
           </div>
 
           {/* KPI 5: ROI % */}
@@ -389,7 +317,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             <span className="text-lg font-black text-cyan-300">
               {metrics.roi >= 0 ? `+${metrics.roi}%` : `${metrics.roi}%`}
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Return on investment</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Season bankroll growth</span>
           </div>
 
           {/* KPI 6: High-Edge Tier Correctness */}
@@ -397,7 +325,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             <span className="text-slate-400 block mb-0.5">High Edge (≥3.0 pts / 4-5★)</span>
             <span className="text-lg font-black text-amber-300">{metrics.highEdgeWinRate}% Success</span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              +{metrics.highEdgeProfitUnits}u ({metrics.highEdgePicks} picks)
+              +{metrics.highEdgeProfitUnits.toFixed(1)}u ({metrics.highEdgePicks.toLocaleString()} picks)
             </span>
           </div>
         </div>
@@ -410,15 +338,15 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             <div>
               <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                 <TrendingUp className="w-4 h-4 text-emerald-500" />
-                Cumulative Units Growth Curve (2024–25 Season)
+                Cumulative Bankroll Growth Curve (2024–25 Full Season)
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Tracking bankroll trajectory as each qualified Model Pick resolves chronologically.
+                Tracking equity progression as each qualified Model Pick resolved chronologically across the 2024–25 season.
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs font-mono">
               <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 font-bold">
-                Current Equity: {metrics.totalProfitUnits >= 0 ? `+${metrics.totalProfitUnits}` : metrics.totalProfitUnits}u
+                Current Equity: {metrics.totalProfitUnits >= 0 ? `+${metrics.totalProfitUnits.toFixed(1)}` : metrics.totalProfitUnits.toFixed(1)}u
               </span>
             </div>
           </div>
@@ -491,28 +419,6 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                     strokeLinejoin="round"
                     points={polylinePoints}
                   />
-
-                  {/* Milestone Points */}
-                  {coords.map((c, i) => {
-                    const isStep =
-                      coords.length <= 30 ||
-                      i === 0 ||
-                      i === coords.length - 1 ||
-                      i % Math.floor(coords.length / 10) === 0;
-                    if (!isStep) return null;
-                    const isSuccess = c.outcome === 'WON';
-                    return (
-                      <circle
-                        key={i}
-                        cx={c.x}
-                        cy={c.y}
-                        r={coords.length <= 30 ? 3.5 : 2.5}
-                        fill={isSuccess ? '#10b981' : '#f43f5e'}
-                        stroke="#ffffff"
-                        strokeWidth="1.5"
-                      />
-                    );
-                  })}
                 </svg>
               );
             })()}
@@ -520,48 +426,71 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
         </div>
       )}
 
-      {/* 3. Market Category Breakdown Matrix (Curated Mode) */}
-      {datasetScope === 'CURATED' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {categoryBreakdown.map((cat) => (
-            <div
-              key={cat.id}
+      {/* 3. Month & Timeline Filter Navigation Bar */}
+      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between gap-3 overflow-x-auto no-scrollbar text-xs">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-slate-400 font-bold flex items-center gap-1 mr-1">
+            <Calendar className="w-3.5 h-3.5" /> Month:
+          </span>
+          {MONTH_OPTIONS.map((m) => (
+            <button
+              key={m.id}
               onClick={() => {
-                setCategoryFilter(categoryFilter === cat.id ? 'ALL' : cat.id);
+                setMonthFilter(m.id);
                 setCurrentPage(1);
               }}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                categoryFilter === cat.id
-                  ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 shadow-sm ring-1 ring-blue-500/30'
-                  : 'bg-white dark:bg-[#0c121e] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer ${
+                monthFilter === m.id
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
               }`}
             >
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{cat.label}</span>
-                <span className="text-[10px] font-mono text-slate-500">{cat.totalPicks} picks</span>
-              </div>
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-base font-black text-slate-900 dark:text-white">
-                  {cat.winRate}% Success
-                </span>
-                <span
-                  className={`text-xs font-mono font-bold ${
-                    cat.totalProfitUnits >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
-                  }`}
-                >
-                  {cat.totalProfitUnits >= 0 ? `+${cat.totalProfitUnits}` : cat.totalProfitUnits}u
-                </span>
-              </div>
-              <div className="text-[10px] text-slate-500 flex items-center justify-between mt-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
-                <span>{cat.wins}S - {cat.losses}F</span>
-                <span className="font-mono">ROI: {cat.roi >= 0 ? `+${cat.roi}%` : `${cat.roi}%`}</span>
-              </div>
-            </div>
+              {m.label}
+            </button>
           ))}
         </div>
-      )}
+      </div>
 
-      {/* 4. Filter & Search Command Strip */}
+      {/* 4. Market Category Breakdown Matrix */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {categoryBreakdown.map((cat) => (
+          <div
+            key={cat.id}
+            onClick={() => {
+              setCategoryFilter(categoryFilter === cat.id ? 'ALL' : cat.id);
+              setCurrentPage(1);
+            }}
+            className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+              categoryFilter === cat.id
+                ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 shadow-sm ring-1 ring-blue-500/30'
+                : 'bg-white dark:bg-[#0c121e] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{cat.label}</span>
+              <span className="text-[10px] font-mono text-slate-500">{cat.totalPicks.toLocaleString()} picks</span>
+            </div>
+            <div className="flex items-baseline justify-between mt-1">
+              <span className="text-base font-black text-slate-900 dark:text-white">
+                {cat.winRate}% Success
+              </span>
+              <span
+                className={`text-xs font-mono font-bold ${
+                  cat.totalProfitUnits >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
+                }`}
+              >
+                {cat.totalProfitUnits >= 0 ? `+${cat.totalProfitUnits.toFixed(1)}` : cat.totalProfitUnits.toFixed(1)}u
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-500 flex items-center justify-between mt-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+              <span>{cat.wins}S - {cat.losses}F</span>
+              <span className="font-mono">ROI: {cat.roi >= 0 ? `+${cat.roi}%` : `${cat.roi}%`}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 5. Filter & Search Command Strip */}
       <div className="p-4 rounded-2xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Outcome Filter: Explicit SUCCESS / FAILURE / PUSH */}
@@ -577,7 +506,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              All Model Picks ({activeDataset.length})
+              All Model Picks ({filteredPicks.length.toLocaleString()})
             </button>
             <button
               onClick={() => {
@@ -591,7 +520,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              SUCCESS ({activeDataset.filter((p) => p.outcome === 'WON').length})
+              SUCCESS ({filteredPicks.filter((p) => p.outcome === 'WON').length.toLocaleString()})
             </button>
             <button
               onClick={() => {
@@ -605,7 +534,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
               }`}
             >
               <XCircle className="w-3.5 h-3.5" />
-              FAILURE ({activeDataset.filter((p) => p.outcome === 'LOST').length})
+              FAILURE ({filteredPicks.filter((p) => p.outcome === 'LOST').length.toLocaleString()})
             </button>
             <button
               onClick={() => {
@@ -619,7 +548,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
               }`}
             >
               <MinusCircle className="w-3.5 h-3.5" />
-              PUSH ({activeDataset.filter((p) => p.outcome === 'PUSH').length})
+              PUSH ({filteredPicks.filter((p) => p.outcome === 'PUSH').length.toLocaleString()})
             </button>
           </div>
 
@@ -693,95 +622,93 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
           </div>
         </div>
 
-        {/* Second Row: Market Category Pills (Curated Mode) */}
-        {datasetScope === 'CURATED' && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
-            <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
-              <Filter className="w-3 h-3" /> Markets:
-            </span>
-            <button
-              onClick={() => {
-                setCategoryFilter('ALL');
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                categoryFilter === 'ALL'
-                  ? 'bg-blue-600 text-white font-bold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => {
-                setCategoryFilter('TOTAL');
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                categoryFilter === 'TOTAL'
-                  ? 'bg-blue-600 text-white font-bold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              Game Totals O/U
-            </button>
-            <button
-              onClick={() => {
-                setCategoryFilter('SPREAD');
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                categoryFilter === 'SPREAD'
-                  ? 'bg-blue-600 text-white font-bold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              Pucklines &amp; Spreads
-            </button>
-            <button
-              onClick={() => {
-                setCategoryFilter('MONEYLINE');
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                categoryFilter === 'MONEYLINE'
-                  ? 'bg-blue-600 text-white font-bold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              Moneylines
-            </button>
-            <button
-              onClick={() => {
-                setCategoryFilter('SOG');
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                categoryFilter === 'SOG'
-                  ? 'bg-blue-600 text-white font-bold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              Shots on Goal (SOG)
-            </button>
-            <button
-              onClick={() => {
-                setCategoryFilter('1ST_PERIOD');
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                categoryFilter === '1ST_PERIOD'
-                  ? 'bg-blue-600 text-white font-bold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              1st Period (1P)
-            </button>
-          </div>
-        )}
+        {/* Second Row: Market Category Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+          <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
+            <Filter className="w-3 h-3" /> Markets:
+          </span>
+          <button
+            onClick={() => {
+              setCategoryFilter('ALL');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              categoryFilter === 'ALL'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => {
+              setCategoryFilter('TOTAL');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              categoryFilter === 'TOTAL'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            Game Totals O/U
+          </button>
+          <button
+            onClick={() => {
+              setCategoryFilter('SPREAD');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              categoryFilter === 'SPREAD'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            Pucklines &amp; Spreads
+          </button>
+          <button
+            onClick={() => {
+              setCategoryFilter('MONEYLINE');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              categoryFilter === 'MONEYLINE'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            Moneylines
+          </button>
+          <button
+            onClick={() => {
+              setCategoryFilter('SOG');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              categoryFilter === 'SOG'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            Shots on Goal (SOG)
+          </button>
+          <button
+            onClick={() => {
+              setCategoryFilter('1ST_PERIOD');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              categoryFilter === '1ST_PERIOD'
+                ? 'bg-blue-600 text-white font-bold'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            1st Period (1P)
+          </button>
+        </div>
       </div>
 
-      {/* 5. Results Cards or Table View */}
+      {/* 6. Results Cards or Table View */}
       {sortedPicks.length === 0 ? (
         <div className="bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center text-slate-500 dark:text-slate-400 text-xs shadow-xs">
           No graded Model Picks found matching your current filter criteria.
@@ -977,7 +904,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                           {pick.awayScore} - {pick.homeScore}
                         </span>
                         <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 block mt-0.5">
-                          Total: {pick.actualTotal} Pts
+                          Total: {pick.actualTotal} {pick.sport === 'NHL' ? 'Goals' : 'Pts'}
                         </span>
                       </div>
 
@@ -1067,15 +994,15 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
         </div>
       )}
 
-      {/* 6. Pagination Controls */}
+      {/* 7. Pagination Controls */}
       {totalPages > 1 && (
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between gap-3 text-xs">
           <div className="text-slate-500 dark:text-slate-400">
             Showing <strong className="text-slate-900 dark:text-white">{(currentPage - 1) * pageSize + 1}</strong> to{' '}
             <strong className="text-slate-900 dark:text-white">
-              {Math.min(currentPage * pageSize, sortedPicks.length)}
+              {Math.min(currentPage * pageSize, sortedPicks.length).toLocaleString()}
             </strong>{' '}
-            of <strong className="text-slate-900 dark:text-white">{sortedPicks.length.toLocaleString()}</strong> graded picks
+            of <strong className="text-slate-900 dark:text-white">{sortedPicks.length.toLocaleString()}</strong> graded picks in 2024–25 Season
           </div>
 
           <div className="flex items-center gap-1.5">
