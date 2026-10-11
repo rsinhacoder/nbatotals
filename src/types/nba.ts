@@ -78,7 +78,7 @@ export interface TrackedBet {
   matchId: string;
   date: string;
   matchup: string;
-  pickType: 'UNDER' | 'OVER';
+  pickType: 'UNDER' | 'OVER' | string;
   targetLine: number;
   modelProjection: number;
   edge: number;
@@ -88,6 +88,7 @@ export interface TrackedBet {
   actualTotal?: number;
   notes?: string;
   timestamp: string;
+  sport?: 'NBA' | 'NHL';
 }
 
 export interface BucketStat {

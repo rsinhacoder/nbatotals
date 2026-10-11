@@ -24,6 +24,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
   onAddNewCustomBet,
 }) => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'RESOLVED'>('ALL');
+  const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form for custom manual bet
@@ -75,11 +76,13 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
 
   const filteredBets = useMemo(() => {
     return trackedBets.filter((b) => {
-      if (statusFilter === 'PENDING') return b.status === 'PENDING';
-      if (statusFilter === 'RESOLVED') return b.status !== 'PENDING';
+      if (statusFilter === 'PENDING' && b.status !== 'PENDING') return false;
+      if (statusFilter === 'RESOLVED' && b.status === 'PENDING') return false;
+      if (sportFilter === 'NBA' && b.sport === 'NHL') return false;
+      if (sportFilter === 'NHL' && b.sport !== 'NHL') return false;
       return true;
     });
-  }, [trackedBets, statusFilter]);
+  }, [trackedBets, statusFilter, sportFilter]);
 
   const handleCreateCustom = (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,38 +211,75 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center bg-slate-100 dark:bg-[#090d16] p-1 rounded-xl border border-slate-200 dark:border-[#1c2438] text-xs">
-          <button
-            onClick={() => setStatusFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-              statusFilter === 'ALL'
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-amber-400 font-bold shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            All Positions ({trackedBets.length})
-          </button>
-          <button
-            onClick={() => setStatusFilter('PENDING')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-              statusFilter === 'PENDING'
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-amber-400 font-bold shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Active Pending ({stats.pending})
-          </button>
-          <button
-            onClick={() => setStatusFilter('RESOLVED')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-              statusFilter === 'RESOLVED'
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-amber-400 font-bold shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Graded Results ({stats.won + stats.lost + stats.push})
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Filter */}
+          <div className="flex items-center bg-slate-100 dark:bg-[#090d16] p-1 rounded-xl border border-slate-200 dark:border-[#1c2438] text-xs">
+            <button
+              onClick={() => setStatusFilter('ALL')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
+                statusFilter === 'ALL'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-amber-400 font-bold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              All Positions ({trackedBets.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('PENDING')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
+                statusFilter === 'PENDING'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-amber-400 font-bold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Active Pending ({stats.pending})
+            </button>
+            <button
+              onClick={() => setStatusFilter('RESOLVED')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
+                statusFilter === 'RESOLVED'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-amber-400 font-bold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Graded Results ({stats.won + stats.lost + stats.push})
+            </button>
+          </div>
+
+          {/* Sport Filter */}
+          <div className="flex items-center bg-slate-100 dark:bg-[#090d16] p-1 rounded-xl border border-slate-200 dark:border-[#1c2438] text-xs">
+            <button
+              onClick={() => setSportFilter('ALL')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                sportFilter === 'ALL'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              All Sports
+            </button>
+            <button
+              onClick={() => setSportFilter('NBA')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                sportFilter === 'NBA'
+                  ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              🏀 NBA
+            </button>
+            <button
+              onClick={() => setSportFilter('NHL')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                sportFilter === 'NHL'
+                  ? 'bg-indigo-600 text-white font-bold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              🏒 NHL
+            </button>
+          </div>
         </div>
       </div>
 
@@ -247,9 +287,9 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
       {filteredBets.length === 0 ? (
         <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] rounded-xl p-12 text-center text-slate-500 dark:text-slate-400 text-xs shadow-xs transition-colors duration-200">
           <BookmarkCheck className="h-8 w-8 text-slate-400 dark:text-slate-600 mx-auto mb-2" />
-          <p className="font-semibold text-slate-900 dark:text-white text-sm">No tracked bets yet</p>
+          <p className="font-semibold text-slate-900 dark:text-white text-sm">No tracked bets found</p>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Browse the <strong>Picks Board</strong> tab and click <strong>"+ Track"</strong> to monitor positions here, or click <strong>"Log Manual Pick"</strong>.
+            Browse the <strong>Picks Board</strong> tab and click <strong>"+ Track"</strong> to monitor positions here.
           </p>
         </div>
       ) : (
@@ -258,7 +298,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
             const isWon = bet.status === 'WON';
             const isLost = bet.status === 'LOST';
             const isPending = bet.status === 'PENDING';
-            const isUnder = bet.pickType === 'UNDER';
+            const isUnder = String(bet.pickType).toUpperCase().includes('UNDER');
 
             return (
               <div
@@ -281,6 +321,9 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-900 dark:text-white text-sm">{bet.matchup}</span>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{bet.date}</span>
+                      <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        {bet.sport === 'NHL' ? '🏒 NHL' : '🏀 NBA'}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-3 text-xs mt-1 font-mono">
@@ -293,7 +336,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
                       </span>
                       <span className="text-slate-300 dark:text-slate-600">•</span>
                       <span className="text-slate-600 dark:text-amber-300">
-                        Edge: {bet.edge > 0 ? `+${bet.edge.toFixed(1)}` : bet.edge.toFixed(1)} pts
+                        Edge: {bet.edge > 0 ? `+${bet.edge.toFixed(1)}` : bet.edge.toFixed(1)} {bet.sport === 'NHL' ? '% EV' : 'pts'}
                       </span>
                     </div>
                   </div>

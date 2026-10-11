@@ -15,6 +15,8 @@ import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 interface HeaderProps {
+  currentSport: 'nba' | 'nhl';
+  onSelectSport: (sport: 'nba' | 'nhl') => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onOpenSync: () => void;
@@ -23,6 +25,7 @@ interface HeaderProps {
   onImportCsv: (e: React.ChangeEvent<HTMLInputElement>) => void;
   gameCount: number;
   upcomingCount: number;
+  nhlUpcomingCount?: number;
   trackedBetsCount: number;
   seasonLabel: string;
   activeModel: ModelConfig;
@@ -77,6 +80,8 @@ const QuantLogoMark: React.FC = () => (
 );
 
 export const Header: React.FC<HeaderProps> = ({
+  currentSport,
+  onSelectSport,
   activeTab,
   setActiveTab,
   onOpenSync,
@@ -85,6 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
   onImportCsv,
   gameCount,
   upcomingCount,
+  nhlUpcomingCount = 6,
   trackedBetsCount,
   seasonLabel,
   activeModel,
@@ -94,46 +100,87 @@ export const Header: React.FC<HeaderProps> = ({
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
 
-  // Modern 5 Core Navigation Items
-  const tabs = [
-    {
-      id: 'picks',
-      label: 'Picks Board',
-      icon: CalendarDays,
-      badge: upcomingCount > 0 ? String(upcomingCount) : undefined,
-      badgeColor: 'bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-    },
-    {
-      id: 'analyzer',
-      label: 'Matchup Analyzer',
-      icon: SlidersHorizontal,
-    },
-    {
-      id: 'tracker',
-      label: 'Bet Tracker',
-      icon: BookmarkCheck,
-      badge: trackedBetsCount > 0 ? String(trackedBetsCount) : undefined,
-      badgeColor: 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-    },
-    {
-      id: 'trackrecord',
-      label: 'Track Record & Data',
-      icon: BarChart3,
-      badge: activeModel.shortLabel,
-      badgeColor: 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
-    },
-    {
-      id: 'academy',
-      label: 'Strategy Academy',
-      icon: GraduationCap,
-    },
-  ];
+  // Dynamic Navigation Items based on Active Sport
+  const tabs =
+    currentSport === 'nhl'
+      ? [
+          {
+            id: 'nhl-picks',
+            label: 'NHL Edge Board',
+            icon: CalendarDays,
+            badge: nhlUpcomingCount > 0 ? String(nhlUpcomingCount) : undefined,
+            badgeColor:
+              'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+          },
+          {
+            id: 'nhl-analyzer',
+            label: 'Matchup Analyzer',
+            icon: SlidersHorizontal,
+          },
+          {
+            id: 'nhl-stats',
+            label: '5-Season Study & Data',
+            icon: BarChart3,
+            badge: '6,115 G',
+            badgeColor:
+              'bg-cyan-50 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+          },
+          {
+            id: 'tracker',
+            label: 'Bet Tracker',
+            icon: BookmarkCheck,
+            badge: trackedBetsCount > 0 ? String(trackedBetsCount) : undefined,
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
+            id: 'academy',
+            label: 'Strategy Academy',
+            icon: GraduationCap,
+          },
+        ]
+      : [
+          {
+            id: 'picks',
+            label: 'Picks Board',
+            icon: CalendarDays,
+            badge: upcomingCount > 0 ? String(upcomingCount) : undefined,
+            badgeColor:
+              'bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+          },
+          {
+            id: 'analyzer',
+            label: 'Matchup Analyzer',
+            icon: SlidersHorizontal,
+          },
+          {
+            id: 'tracker',
+            label: 'Bet Tracker',
+            icon: BookmarkCheck,
+            badge: trackedBetsCount > 0 ? String(trackedBetsCount) : undefined,
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
+            id: 'trackrecord',
+            label: 'Track Record & Data',
+            icon: BarChart3,
+            badge: activeModel.shortLabel,
+            badgeColor:
+              'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+          },
+          {
+            id: 'academy',
+            label: 'Strategy Academy',
+            icon: GraduationCap,
+          },
+        ];
 
   return (
     <header className="border-b border-slate-200 dark:border-[#1c2438] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md sticky top-0 z-40 shadow-xs transition-colors duration-200 w-full overflow-x-clip">
       {/* Top Main Navigation Bar */}
       <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2">
-        {/* Left: Brand Identity */}
+        {/* Left: Brand Identity & Sport Switcher */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Logo Badge */}
           <QuantLogoMark />
@@ -141,15 +188,60 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Brand Title */}
           <div className="flex items-center gap-1.5 shrink-0">
             <h1 className="text-base sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1 whitespace-nowrap">
-              <span>NBA</span>
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent">
-                TOTALS
+              <span>{currentSport === 'nhl' ? 'NHL' : 'NBA'}</span>
+              <span
+                className={
+                  currentSport === 'nhl'
+                    ? 'bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-400 bg-clip-text text-transparent'
+                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent'
+                }
+              >
+                {currentSport === 'nhl' ? 'TOTALS' : 'TOTALS'}
               </span>
               <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden sm:inline">.com</span>
             </h1>
             <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
-              QUANT PRO
+              {currentSport === 'nhl' ? 'POISSON EDGE' : 'QUANT PRO'}
             </span>
+          </div>
+
+          {/* Sport Switcher Toggle */}
+          <div className="flex items-center p-0.5 sm:p-1 rounded-xl bg-slate-100 dark:bg-[#141b2a] border border-slate-200 dark:border-[#222c42] shrink-0 text-xs font-bold ml-1 sm:ml-2">
+            <button
+              onClick={() => {
+                onSelectSport('nba');
+                if (activeTab.startsWith('nhl-')) setActiveTab('picks');
+              }}
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                currentSport === 'nba'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🏀</span>
+              <span className="font-extrabold">NBA</span>
+            </button>
+            <button
+              onClick={() => {
+                onSelectSport('nhl');
+                if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy') {
+                  setActiveTab('nhl-picks');
+                }
+              }}
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                currentSport === 'nhl'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🏒</span>
+              <span className="font-extrabold">NHL</span>
+              {nhlUpcomingCount > 0 && (
+                <span className="hidden sm:inline-block px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-400/30 text-white font-mono">
+                  {nhlUpcomingCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -160,17 +252,17 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
               className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-[#141b2a] hover:bg-slate-50 dark:hover:bg-[#1c2438] text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-[#222c42] shadow-2xs transition-all cursor-pointer group"
-              title={`Active Model: ${activeModel.name}`}
+              title={currentSport === 'nhl' ? 'NHL Model: 5-Year Bivariate Poisson' : `Active Model: ${activeModel.name}`}
             >
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600 dark:bg-blue-400"></span>
               </span>
               <span className="font-mono text-xs font-bold sm:hidden">
-                {activeModel.id === '5_YEAR' ? '5-Yr' : activeModel.id === '2_YEAR' ? '2-Yr' : 'Model'}
+                {currentSport === 'nhl' ? 'Poisson' : activeModel.id === '5_YEAR' ? '5-Yr' : '2-Yr'}
               </span>
               <span className="font-mono font-bold hidden sm:inline">
-                {activeModel.shortLabel}
+                {currentSport === 'nhl' ? '5-Yr Poisson xG' : activeModel.shortLabel}
               </span>
               <ChevronDown
                 className={`h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform duration-200 ${

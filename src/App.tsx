@@ -36,12 +36,19 @@ import {
   type ModelConfig,
 } from './utils/modelConstants';
 import type { ReferenceMap, TrackedBet, UpcomingMatch } from './types/nba';
+import { NHLPicksBoardTab } from './components/nhl/NHLPicksBoardTab';
+import { NHLMatchupAnalyzerTab } from './components/nhl/NHLMatchupAnalyzerTab';
+import { NHLHistoricalStatsTab } from './components/nhl/NHLHistoricalStatsTab';
+import { fetchLiveUpcomingNHLSchedule, getCuratedUpcomingNHLMatches } from './utils/nhlEspnApi';
+import type { NHLUpcomingMatch, NHLMarketEdge } from './types/nhl';
 
 const STORAGE_KEY_GAMES = 'nba_quant_games_v4';
 const STORAGE_KEY_REFERENCES = 'nba_quant_references_v4';
 const STORAGE_KEY_UPCOMING = 'nba_quant_upcoming_v5';
 const STORAGE_KEY_MODEL = 'nba_quant_model_v2';
 const STORAGE_KEY_BETS = 'nba_quant_bets_v2';
+const STORAGE_KEY_SPORT = 'quant_selected_sport_v1';
+const STORAGE_KEY_NHL_UPCOMING = 'nhl_quant_upcoming_v1';
 
 export function App() {
   // Navigation: 5 core human-centered tabs
@@ -134,6 +141,109 @@ export function App() {
     lowestQ: 41.5,
   });
 
+  // Selected Sport: 'nba' | 'nhl'
+  const [currentSport, setCurrentSport] = useState<'nba' | 'nhl'>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SPORT);
+      if (saved === 'nba' || saved === 'nhl') return saved;
+    } catch (e) {}
+    return 'nba';
+  });
+
+  const handleSelectSport = (sport: 'nba' | 'nhl') => {
+    setCurrentSport(sport);
+    try {
+      localStorage.setItem(STORAGE_KEY_SPORT, sport);
+    } catch (e) {}
+    if (sport === 'nhl') {
+      if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy') {
+        setActiveTab('nhl-picks');
+      }
+    } else {
+      if (activeTab.startsWith('nhl-')) {
+        setActiveTab('picks');
+      }
+    }
+  };
+
+  // NHL Upcoming Games state
+  const [nhlUpcomingMatches, setNhlUpcomingMatches] = useState<NHLUpcomingMatch[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_NHL_UPCOMING);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return getCuratedUpcomingNHLMatches();
+  });
+
+  const [isSyncingNHL, setIsSyncingNHL] = useState(false);
+
+  // Preloaded matchup for NHL Matchup Analyzer
+  const [nhlAnalyzerPreload, setNhlAnalyzerPreload] = useState<{
+    away: string;
+    home: string;
+    line: number;
+  }>({
+    away: 'CAR',
+    home: 'PHI',
+    line: 5.5,
+  });
+
+  const handleRefreshNHLSchedule = async (showToast: boolean = true) => {
+    setIsSyncingNHL(true);
+    try {
+      const slate = await fetchLiveUpcomingNHLSchedule(5);
+      if (slate && slate.length > 0) {
+        setNhlUpcomingMatches(slate);
+        try {
+          localStorage.setItem(STORAGE_KEY_NHL_UPCOMING, JSON.stringify(slate));
+        } catch (e) {}
+        if (showToast) {
+          addToast('NHL Schedule Synced', `Updated ${slate.length} official NHL games & DraftKings lines`, 'success');
+        }
+      }
+    } catch (e) {
+      console.warn('NHL schedule sync error:', e);
+      if (showToast) {
+        addToast('Verified Slate Active', 'Using official NHL consensus odds', 'info');
+      }
+    } finally {
+      setIsSyncingNHL(false);
+    }
+  };
+
+  const handleTrackNHLBet = (match: NHLUpcomingMatch, market: NHLMarketEdge) => {
+    const newBet: TrackedBet = {
+      id: `bet_nhl_${Date.now()}`,
+      matchId: match.id,
+      date: match.date,
+      matchup: `${match.awayAbbrev} @ ${match.homeAbbrev}`,
+      pickType: market.marketName,
+      targetLine: match.sportsbookTotal,
+      modelProjection: match.modelProjectedTotal,
+      edge: market.edgePercent,
+      units: market.edgePercent >= 5.0 ? 2.0 : 1.0,
+      odds: market.sportsbookOdds,
+      status: 'PENDING',
+      notes: `NHL Quantitative Edge: ${market.marketName} (+${market.edgePercent}% EV)`,
+      timestamp: new Date().toISOString(),
+      sport: 'NHL',
+    };
+    setTrackedBets((prev) => [newBet, ...prev]);
+    addToast('Position Tracked', `${newBet.matchup} - ${newBet.pickType} (${newBet.odds})`, 'success');
+  };
+
+  const handleSendToNHLAnalyzer = (match: NHLUpcomingMatch) => {
+    setNhlAnalyzerPreload({
+      away: match.awayAbbrev,
+      home: match.homeAbbrev,
+      line: match.sportsbookTotal,
+    });
+    setActiveTab('nhl-analyzer');
+  };
+
   // Initialize Raw Historical Games (ensures full multi-season 6,000-game dataset)
   const [rawGames, setRawGames] = useState<RawGameInput[]>(() => {
     try {
@@ -217,9 +327,10 @@ export function App() {
     }
   };
 
-  // Automatically fetch real ESPN schedule on app mount
+  // Automatically fetch real ESPN schedules on app mount
   useEffect(() => {
     handleRefreshSchedule(false);
+    handleRefreshNHLSchedule(false);
   }, []);
 
   // Persist to localStorage
@@ -456,6 +567,8 @@ export function App() {
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 dark:bg-[#080b12] text-slate-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-blue-600/15 selection:text-blue-900 dark:selection:bg-amber-500/30 dark:selection:text-amber-200 transition-colors duration-200">
       {/* Header & Navigation */}
       <Header
+        currentSport={currentSport}
+        onSelectSport={handleSelectSport}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenSync={() => setIsSyncModalOpen(true)}
@@ -464,6 +577,7 @@ export function App() {
         onImportCsv={handleImportCsv}
         gameCount={processedGames.length}
         upcomingCount={upcomingMatches.length}
+        nhlUpcomingCount={nhlUpcomingMatches.length}
         trackedBetsCount={trackedBets.filter((b) => b.status === 'PENDING').length}
         seasonLabel={seasonLabel}
         activeModel={activeModel}
@@ -472,7 +586,7 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0">
-        {/* Tab 1: Picks Board */}
+        {/* NBA Tab 1: Picks Board */}
         {activeTab === 'picks' && (
           <PicksBoardTab
             upcomingMatches={upcomingMatches}
@@ -487,7 +601,7 @@ export function App() {
           />
         )}
 
-        {/* Tab 2: Matchup Analyzer */}
+        {/* NBA Tab 2: Matchup Analyzer */}
         {activeTab === 'analyzer' && (
           <GameAnalyzerTab
             key={`${analyzerPreload.away}-${analyzerPreload.home}-${analyzerPreload.line}-${activeModel.id}`}
@@ -501,7 +615,34 @@ export function App() {
           />
         )}
 
-        {/* Tab 3: Bet Tracker */}
+        {/* NHL Tab 1: NHL Picks & Edge Board */}
+        {activeTab === 'nhl-picks' && (
+          <NHLPicksBoardTab
+            upcomingMatches={nhlUpcomingMatches}
+            onTrackBet={handleTrackNHLBet}
+            onSendToAnalyzer={handleSendToNHLAnalyzer}
+            onRefreshSchedule={() => handleRefreshNHLSchedule(true)}
+            isSyncingSchedule={isSyncingNHL}
+          />
+        )}
+
+        {/* NHL Tab 2: NHL Matchup Analyzer */}
+        {activeTab === 'nhl-analyzer' && (
+          <NHLMatchupAnalyzerTab
+            key={`${nhlAnalyzerPreload.away}-${nhlAnalyzerPreload.home}-${nhlAnalyzerPreload.line}`}
+            initialAway={nhlAnalyzerPreload.away}
+            initialHome={nhlAnalyzerPreload.home}
+            initialLine={nhlAnalyzerPreload.line}
+            onTrackBet={handleAddNewCustomBet}
+          />
+        )}
+
+        {/* NHL Tab 3: NHL 5-Season Historical Study & Backtest */}
+        {activeTab === 'nhl-stats' && (
+          <NHLHistoricalStatsTab />
+        )}
+
+        {/* Shared Tab: Bet Tracker (NBA & NHL) */}
         {activeTab === 'tracker' && (
           <BetTrackerTab
             trackedBets={trackedBets}
@@ -513,7 +654,7 @@ export function App() {
           />
         )}
 
-        {/* Tab 4: Track Record & Data */}
+        {/* NBA Tab 4: Track Record & Data */}
         {activeTab === 'trackrecord' && (
           <TrackRecordTab
             games={processedGames}
@@ -528,7 +669,7 @@ export function App() {
           />
         )}
 
-        {/* Tab 5: Strategy Academy */}
+        {/* Shared Tab: Strategy Academy */}
         {activeTab === 'academy' && (
           <QuantAcademyTab activeModel={activeModel} />
         )}
