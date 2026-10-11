@@ -179,19 +179,31 @@ export async function fetchLiveUpcomingNHLSchedule(daysAhead: number = 5): Promi
     }
   }
 
-  // If live fetch returned games, sort them by highest edge EV%
+  // Sort matches chronologically by date, then time
+  allMatches.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+
+  // If live fetch returned games, return them
   if (allMatches.length > 0) {
     return allMatches;
   }
 
-  // Fallback to high-quality curated matchups if offline
+  // Fallback to high-quality curated multi-day matchups if offline
   return getCuratedUpcomingNHLMatches();
 }
 
 export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
+  const todayEasternStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+  const [y, m, d] = todayEasternStr.split('-').map(Number);
+
+  const getDateStr = (offset: number) => {
+    const dt = new Date(Date.UTC(y, m - 1, d + offset, 12, 0, 0));
+    return dt.toISOString().slice(0, 10);
+  };
+
   const sampleMatchups: Array<{
     away: string;
     home: string;
+    dateOffset: number;
     time: string;
     total: number;
     overOdds: string;
@@ -201,10 +213,12 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
     mlHome: string;
     mlAway: string;
   }> = [
+    // Today (Day 0)
     {
       away: 'CAR',
       home: 'PHI',
-      time: '7:00 PM',
+      dateOffset: 0,
+      time: '7:00 PM ET',
       total: 5.5,
       overOdds: '-125',
       underOdds: '+105',
@@ -216,7 +230,8 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
     {
       away: 'VAN',
       home: 'NYR',
-      time: '7:30 PM',
+      dateOffset: 0,
+      time: '7:00 PM ET',
       total: 5.5,
       overOdds: '-110',
       underOdds: '-110',
@@ -228,7 +243,8 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
     {
       away: 'SEA',
       home: 'WSH',
-      time: '7:00 PM',
+      dateOffset: 0,
+      time: '7:30 PM ET',
       total: 6.5,
       overOdds: '+105',
       underOdds: '-125',
@@ -240,7 +256,8 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
     {
       away: 'FLA',
       home: 'BUF',
-      time: '7:00 PM',
+      dateOffset: 0,
+      time: '7:00 PM ET',
       total: 6.0,
       overOdds: '-115',
       underOdds: '-105',
@@ -252,7 +269,8 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
     {
       away: 'VGK',
       home: 'MIN',
-      time: '8:00 PM',
+      dateOffset: 0,
+      time: '8:00 PM ET',
       total: 6.0,
       overOdds: '-110',
       underOdds: '-110',
@@ -264,7 +282,8 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
     {
       away: 'EDM',
       home: 'COL',
-      time: '9:30 PM',
+      dateOffset: 0,
+      time: '9:30 PM ET',
       total: 6.5,
       overOdds: '-120',
       underOdds: '+100',
@@ -273,13 +292,161 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
       mlHome: '-125',
       mlAway: '+105',
     },
+
+    // Tomorrow (Day 1)
+    {
+      away: 'BOS',
+      home: 'TOR',
+      dateOffset: 1,
+      time: '7:00 PM ET',
+      total: 5.5,
+      overOdds: '-115',
+      underOdds: '-105',
+      puckHomeOdds: '+145',
+      puckAwayOdds: '-175',
+      mlHome: '-140',
+      mlAway: '+120',
+    },
+    {
+      away: 'TBL',
+      home: 'DET',
+      dateOffset: 1,
+      time: '7:30 PM ET',
+      total: 6.0,
+      overOdds: '-110',
+      underOdds: '-110',
+      puckHomeOdds: '-105',
+      puckAwayOdds: '-115',
+      mlHome: '+115',
+      mlAway: '-135',
+    },
+    {
+      away: 'DAL',
+      home: 'WPG',
+      dateOffset: 1,
+      time: '8:00 PM ET',
+      total: 5.5,
+      overOdds: '-105',
+      underOdds: '-115',
+      puckHomeOdds: '-160',
+      puckAwayOdds: '+135',
+      mlHome: '-130',
+      mlAway: '+110',
+    },
+    {
+      away: 'LAK',
+      home: 'ANA',
+      dateOffset: 1,
+      time: '10:00 PM ET',
+      total: 5.5,
+      overOdds: '+100',
+      underOdds: '-120',
+      puckHomeOdds: '+160',
+      puckAwayOdds: '-195',
+      mlHome: '+165',
+      mlAway: '-200',
+    },
+
+    // Day 2
+    {
+      away: 'NJD',
+      home: 'PIT',
+      dateOffset: 2,
+      time: '7:00 PM ET',
+      total: 6.0,
+      overOdds: '-115',
+      underOdds: '-105',
+      puckHomeOdds: '+150',
+      puckAwayOdds: '-180',
+      mlHome: '+120',
+      mlAway: '-140',
+    },
+    {
+      away: 'NYI',
+      home: 'CBJ',
+      dateOffset: 2,
+      time: '7:00 PM ET',
+      total: 5.5,
+      overOdds: '-110',
+      underOdds: '-110',
+      puckHomeOdds: '+130',
+      puckAwayOdds: '-155',
+      mlHome: '+125',
+      mlAway: '-145',
+    },
+    {
+      away: 'NSH',
+      home: 'STL',
+      dateOffset: 2,
+      time: '8:00 PM ET',
+      total: 6.0,
+      overOdds: '-110',
+      underOdds: '-110',
+      puckHomeOdds: '-115',
+      puckAwayOdds: '-105',
+      mlHome: '-110',
+      mlAway: '-110',
+    },
+    {
+      away: 'CGY',
+      home: 'UTA',
+      dateOffset: 2,
+      time: '9:00 PM ET',
+      total: 6.0,
+      overOdds: '-105',
+      underOdds: '-115',
+      puckHomeOdds: '+140',
+      puckAwayOdds: '-165',
+      mlHome: '+110',
+      mlAway: '-130',
+    },
+
+    // Day 3
+    {
+      away: 'CHI',
+      home: 'OTT',
+      dateOffset: 3,
+      time: '7:00 PM ET',
+      total: 6.0,
+      overOdds: '-120',
+      underOdds: '+100',
+      puckHomeOdds: '+140',
+      puckAwayOdds: '-170',
+      mlHome: '-160',
+      mlAway: '+135',
+    },
+    {
+      away: 'MTL',
+      home: 'BOS',
+      dateOffset: 3,
+      time: '7:30 PM ET',
+      total: 5.5,
+      overOdds: '-110',
+      underOdds: '-110',
+      puckHomeOdds: '+135',
+      puckAwayOdds: '-160',
+      mlHome: '-175',
+      mlAway: '+145',
+    },
+    {
+      away: 'SJS',
+      home: 'VGK',
+      dateOffset: 3,
+      time: '10:00 PM ET',
+      total: 6.0,
+      overOdds: '-115',
+      underOdds: '-105',
+      puckHomeOdds: '+120',
+      puckAwayOdds: '-145',
+      mlHome: '-250',
+      mlAway: '+210',
+    },
   ];
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  return sampleMatchups.map((m, idx) => {
+  const matches = sampleMatchups.map((m, idx) => {
     const homeProf = getNHLTeamProfile(m.home);
     const awayProf = getNHLTeamProfile(m.away);
+    const matchDate = getDateStr(m.dateOffset);
 
     const forecast = runNHLForecastingModel({
       homeTeam: m.home,
@@ -299,9 +466,9 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
 
     return {
       id: `nhl_curated_${m.away}_${m.home}_${idx}`,
-      date: today,
+      date: matchDate,
       time: m.time,
-      status: 'Scheduled',
+      status: 'Scheduled' as const,
       awayTeam: awayProf.name,
       homeTeam: homeProf.name,
       awayAbbrev: awayProf.abbreviation,
@@ -357,4 +524,6 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
       factors: forecast.factors,
     };
   });
+
+  return matches.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 }

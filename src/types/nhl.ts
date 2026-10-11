@@ -27,6 +27,7 @@ export interface NHLMarketEdge {
   confidence: 'HIGH' | 'MEDIUM' | 'LEAN' | 'AVOID';
   starRating: 1 | 2 | 3 | 4 | 5;
   recommended: boolean;
+  isModelFavored?: boolean; // Model probability >= 50% (model believes this outcome will hit)
 }
 
 export interface NHLStartingGoalie {

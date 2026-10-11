@@ -179,6 +179,7 @@ export function App() {
   });
 
   const [isSyncingNHL, setIsSyncingNHL] = useState(false);
+  const [lastNHLSyncTime, setLastNHLSyncTime] = useState<Date>(new Date());
 
   // Preloaded matchup for NHL Matchup Analyzer
   const [nhlAnalyzerPreload, setNhlAnalyzerPreload] = useState<{
@@ -197,6 +198,7 @@ export function App() {
       const slate = await fetchLiveUpcomingNHLSchedule(5);
       if (slate && slate.length > 0) {
         setNhlUpcomingMatches(slate);
+        setLastNHLSyncTime(new Date());
         try {
           localStorage.setItem(STORAGE_KEY_NHL_UPCOMING, JSON.stringify(slate));
         } catch (e) {}
@@ -623,6 +625,7 @@ export function App() {
             onSendToAnalyzer={handleSendToNHLAnalyzer}
             onRefreshSchedule={() => handleRefreshNHLSchedule(true)}
             isSyncingSchedule={isSyncingNHL}
+            lastSyncTime={lastNHLSyncTime}
           />
         )}
 

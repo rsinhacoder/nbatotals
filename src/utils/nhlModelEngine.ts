@@ -470,11 +470,23 @@ export function runNHLForecastingModel(params: NHLModelParameters) {
     (projectedTotalFaceoffs * (projectedAwayFaceoffWinPct / 100)).toFixed(1)
   );
 
-  // Sort markets by Edge % descending
+  // Flag isModelFavored (true if model win probability is at least 50%)
+  for (const m of allMarkets) {
+    m.isModelFavored = m.modelProbability >= 0.50;
+  }
+
+  // Filter markets that the model actually believes will be correct (win probability >= 50%)
+  const modelFavoredMarkets = allMarkets.filter((m) => m.modelProbability >= 0.50);
+  modelFavoredMarkets.sort((a, b) => b.edgePercent - a.edgePercent);
+
+  // Sort all markets by Edge % descending
   allMarkets.sort((a, b) => b.edgePercent - a.edgePercent);
 
-  // Highest edge market
-  const highestEdgeMarket = allMarkets[0];
+  // Highest edge market that the model believes will be correct (can be of any market: Totals, Puckline, ML, SOG, 1P)
+  const highestEdgeMarket =
+    modelFavoredMarkets.length > 0 && modelFavoredMarkets[0].edgePercent > 0
+      ? modelFavoredMarkets[0]
+      : (modelFavoredMarkets[0] || allMarkets[0]);
 
   // Key narrative context
   let narrative = '';
