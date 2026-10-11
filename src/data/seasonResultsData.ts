@@ -8,8 +8,8 @@ import type { GradedModelPick, SeasonPerformanceMetrics } from '../types/results
  */
 export function enrichPickComparison(pick: GradedModelPick): GradedModelPick {
   const actualTotal = pick.actualTotal ?? (pick.awayScore + pick.homeScore);
-  const isNHL = pick.sport === 'NHL';
-  const unit = isNHL ? 'Goals' : 'Pts';
+  const isHockey = pick.sport === 'NHL' || pick.sport === 'KHL';
+  const unit = isHockey ? 'Goals' : 'Pts';
 
   let modelPickValue = pick.modelPickValue || pick.marketName;
   let currentValue = pick.currentValue || `${actualTotal} Total ${unit} (${pick.awayScore}-${pick.homeScore})`;

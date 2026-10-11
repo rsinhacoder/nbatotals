@@ -30,8 +30,8 @@ import type { GradedModelPick, PickOutcome } from '../types/results';
 import type { NBAGame } from '../types/nba';
 
 interface ModelResultsTabProps {
-  currentSport: 'nba' | 'nhl';
-  onSelectSport?: (sport: 'nba' | 'nhl') => void;
+  currentSport: 'nba' | 'nhl' | 'khl';
+  onSelectSport?: (sport: 'nba' | 'nhl' | 'khl') => void;
   historicalGames?: NBAGame[];
 }
 
@@ -42,9 +42,9 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   // Season Selector: '2026-27' (Current Season) is DEFAULT
   const [seasonFilter, setSeasonFilter] = useState<'2026-27' | '2024-25' | 'ALL'>('2026-27');
 
-  // Sport Filter: 'ALL' | 'NBA' | 'NHL'
-  const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL'>(
-    currentSport === 'nhl' ? 'NHL' : 'NBA'
+  // Sport Filter: 'ALL' | 'NBA' | 'NHL' | 'KHL'
+  const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL' | 'KHL'>(
+    currentSport === 'khl' ? 'KHL' : currentSport === 'nhl' ? 'NHL' : 'NBA'
   );
 
   // Month Filter
@@ -171,6 +171,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   // Total sport counts in current selected season
   const totalNBAPicks = useMemo(() => basePicks.filter((p) => p.sport === 'NBA').length, [basePicks]);
   const totalNHLPicks = useMemo(() => basePicks.filter((p) => p.sport === 'NHL').length, [basePicks]);
+  const totalKHLPicks = useMemo(() => basePicks.filter((p) => p.sport === 'KHL').length, [basePicks]);
 
   // Market Category breakdown
   const categoryBreakdown = useMemo(() => {
@@ -616,6 +617,20 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
               }`}
             >
               🏒 NHL ({totalNHLPicks.toLocaleString()})
+            </button>
+            <button
+              onClick={() => {
+                setSportFilter('KHL');
+                setCurrentPage(1);
+                onSelectSport?.('khl');
+              }}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                sportFilter === 'KHL'
+                  ? 'bg-cyan-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              ❄️ KHL ({totalKHLPicks.toLocaleString()})
             </button>
           </div>
 

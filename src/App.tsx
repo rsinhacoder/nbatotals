@@ -42,6 +42,11 @@ import { NHLMatchupAnalyzerTab } from './components/nhl/NHLMatchupAnalyzerTab';
 import { NHLHistoricalStatsTab } from './components/nhl/NHLHistoricalStatsTab';
 import { fetchLiveUpcomingNHLSchedule, getCuratedUpcomingNHLMatches } from './utils/nhlEspnApi';
 import type { NHLUpcomingMatch, NHLMarketEdge } from './types/nhl';
+import { KHLPicksBoardTab } from './components/khl/KHLPicksBoardTab';
+import { KHLMatchupAnalyzerTab } from './components/khl/KHLMatchupAnalyzerTab';
+import { KHLHistoricalStatsTab } from './components/khl/KHLHistoricalStatsTab';
+import { getCuratedUpcomingKHLMatches } from './utils/khlScheduleApi';
+import type { KHLUpcomingMatch, KHLMarketEdge } from './types/khl';
 
 const STORAGE_KEY_GAMES = 'nba_quant_games_v4';
 const STORAGE_KEY_REFERENCES = 'nba_quant_references_v4';
@@ -50,6 +55,7 @@ const STORAGE_KEY_MODEL = 'nba_quant_model_v2';
 const STORAGE_KEY_BETS = 'nba_quant_bets_v2';
 const STORAGE_KEY_SPORT = 'quant_selected_sport_v1';
 const STORAGE_KEY_NHL_UPCOMING = 'nhl_quant_upcoming_v1';
+const STORAGE_KEY_KHL_UPCOMING = 'khl_quant_upcoming_v1';
 
 export function App() {
   // Navigation: 5 core human-centered tabs
@@ -142,26 +148,30 @@ export function App() {
     lowestQ: 41.5,
   });
 
-  // Selected Sport: 'nba' | 'nhl'
-  const [currentSport, setCurrentSport] = useState<'nba' | 'nhl'>(() => {
+  // Selected Sport: 'nba' | 'nhl' | 'khl'
+  const [currentSport, setCurrentSport] = useState<'nba' | 'nhl' | 'khl'>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_SPORT);
-      if (saved === 'nba' || saved === 'nhl') return saved;
+      if (saved === 'nba' || saved === 'nhl' || saved === 'khl') return saved;
     } catch (e) {}
     return 'nba';
   });
 
-  const handleSelectSport = (sport: 'nba' | 'nhl') => {
+  const handleSelectSport = (sport: 'nba' | 'nhl' | 'khl') => {
     setCurrentSport(sport);
     try {
       localStorage.setItem(STORAGE_KEY_SPORT, sport);
     } catch (e) {}
-    if (sport === 'nhl') {
+    if (sport === 'khl') {
+      if (!activeTab.startsWith('khl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
+        setActiveTab('khl-picks');
+      }
+    } else if (sport === 'nhl') {
       if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
         setActiveTab('nhl-picks');
       }
     } else {
-      if (activeTab.startsWith('nhl-')) {
+      if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-')) {
         setActiveTab('picks');
       }
     }
@@ -245,6 +255,81 @@ export function App() {
       line: match.sportsbookTotal,
     });
     setActiveTab('nhl-analyzer');
+  };
+
+  // KHL Upcoming Games state
+  const [khlUpcomingMatches, setKhlUpcomingMatches] = useState<KHLUpcomingMatch[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_KHL_UPCOMING);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return getCuratedUpcomingKHLMatches();
+  });
+
+  const [isSyncingKHL, setIsSyncingKHL] = useState(false);
+
+  // Preloaded matchup for KHL Matchup Analyzer
+  const [khlAnalyzerPreload, setKhlAnalyzerPreload] = useState<{
+    away: string;
+    home: string;
+    line: number;
+  }>({
+    away: 'SKA',
+    home: 'CSK',
+    line: 5.0,
+  });
+
+  const handleRefreshKHLSchedule = async (showToast: boolean = true) => {
+    setIsSyncingKHL(true);
+    try {
+      const slate = getCuratedUpcomingKHLMatches();
+      setKhlUpcomingMatches(slate);
+      try {
+        localStorage.setItem(STORAGE_KEY_KHL_UPCOMING, JSON.stringify(slate));
+      } catch (e) {}
+      if (showToast) {
+        addToast('KHL Slate Refreshed', `Updated ${slate.length} KHL games & consensus lines`, 'success');
+      }
+    } catch (e) {
+      if (showToast) {
+        addToast('Verified KHL Slate Active', 'Using curated continental schedule', 'info');
+      }
+    } finally {
+      setIsSyncingKHL(false);
+    }
+  };
+
+  const handleTrackKHLBet = (match: KHLUpcomingMatch, market: KHLMarketEdge) => {
+    const newBet: TrackedBet = {
+      id: `bet_khl_${Date.now()}`,
+      matchId: match.id,
+      date: match.date,
+      matchup: `${match.awayAbbrev} @ ${match.homeAbbrev}`,
+      pickType: market.marketName,
+      targetLine: match.sportsbookTotal,
+      modelProjection: match.modelProjectedTotal,
+      edge: market.edgePercent,
+      units: market.edgePercent >= 5.0 ? 2.0 : 1.0,
+      odds: market.sportsbookOdds,
+      status: 'PENDING',
+      notes: `KHL Quantitative Edge: ${market.marketName} (+${market.edgePercent}% EV)`,
+      timestamp: new Date().toISOString(),
+      sport: 'KHL',
+    };
+    setTrackedBets((prev) => [newBet, ...prev]);
+    addToast('Position Tracked', `${newBet.matchup} - ${newBet.pickType} (${newBet.odds})`, 'success');
+  };
+
+  const handleSendToKHLAnalyzer = (match: KHLUpcomingMatch) => {
+    setKhlAnalyzerPreload({
+      away: match.awayAbbrev,
+      home: match.homeAbbrev,
+      line: match.sportsbookTotal,
+    });
+    setActiveTab('khl-analyzer');
   };
 
   // Initialize Raw Historical Games (ensures full multi-season 6,000-game dataset)
@@ -581,6 +666,7 @@ export function App() {
         gameCount={processedGames.length}
         upcomingCount={upcomingMatches.length}
         nhlUpcomingCount={nhlUpcomingMatches.length}
+        khlUpcomingCount={khlUpcomingMatches.length}
         trackedBetsCount={trackedBets.filter((b) => b.status === 'PENDING').length}
         seasonLabel={seasonLabel}
         activeModel={activeModel}
@@ -653,6 +739,33 @@ export function App() {
         {/* NHL Tab 3: NHL 5-Season Historical Study & Backtest */}
         {activeTab === 'nhl-stats' && (
           <NHLHistoricalStatsTab />
+        )}
+
+        {/* KHL Tab 1: KHL Picks & Edge Board */}
+        {activeTab === 'khl-picks' && (
+          <KHLPicksBoardTab
+            upcomingMatches={khlUpcomingMatches}
+            onTrackBet={handleTrackKHLBet}
+            onSendToAnalyzer={handleSendToKHLAnalyzer}
+            onRefreshSchedule={() => handleRefreshKHLSchedule(true)}
+            isSyncingSchedule={isSyncingKHL}
+          />
+        )}
+
+        {/* KHL Tab 2: KHL Matchup Analyzer */}
+        {activeTab === 'khl-analyzer' && (
+          <KHLMatchupAnalyzerTab
+            key={`${khlAnalyzerPreload.away}-${khlAnalyzerPreload.home}-${khlAnalyzerPreload.line}`}
+            initialAway={khlAnalyzerPreload.away}
+            initialHome={khlAnalyzerPreload.home}
+            initialLine={khlAnalyzerPreload.line}
+            onTrackBet={handleAddNewCustomBet}
+          />
+        )}
+
+        {/* KHL Tab 3: KHL 5-Season Historical Study */}
+        {activeTab === 'khl-stats' && (
+          <KHLHistoricalStatsTab />
         )}
 
         {/* Shared Tab: Bet Tracker (NBA & NHL) */}

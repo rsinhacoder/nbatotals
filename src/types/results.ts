@@ -2,7 +2,7 @@ export type PickOutcome = 'WON' | 'LOST' | 'PUSH' | 'SUCCESS' | 'FAILURE';
 
 export interface GradedModelPick {
   id: string;
-  sport: 'NBA' | 'NHL';
+  sport: 'NBA' | 'NHL' | 'KHL';
   date: string; // YYYY-MM-DD
   time?: string;
   matchup: string; // e.g. "New York Knicks @ Boston Celtics"

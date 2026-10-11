@@ -93,7 +93,7 @@ export interface TrackedBet {
   actualTotal?: number;
   notes?: string;
   timestamp: string;
-  sport?: 'NBA' | 'NHL';
+  sport?: 'NBA' | 'NHL' | 'KHL';
 }
 
 export interface BucketStat {

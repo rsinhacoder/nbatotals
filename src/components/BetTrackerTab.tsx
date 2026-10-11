@@ -24,7 +24,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
   onAddNewCustomBet,
 }) => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'RESOLVED'>('ALL');
-  const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL'>('ALL');
+  const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL' | 'KHL'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form for custom manual bet
@@ -78,8 +78,9 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
     return trackedBets.filter((b) => {
       if (statusFilter === 'PENDING' && b.status !== 'PENDING') return false;
       if (statusFilter === 'RESOLVED' && b.status === 'PENDING') return false;
-      if (sportFilter === 'NBA' && b.sport === 'NHL') return false;
+      if (sportFilter === 'NBA' && (b.sport === 'NHL' || b.sport === 'KHL')) return false;
       if (sportFilter === 'NHL' && b.sport !== 'NHL') return false;
+      if (sportFilter === 'KHL' && b.sport !== 'KHL') return false;
       return true;
     });
   }, [trackedBets, statusFilter, sportFilter]);
@@ -279,6 +280,16 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
             >
               🏒 NHL
             </button>
+            <button
+              onClick={() => setSportFilter('KHL')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                sportFilter === 'KHL'
+                  ? 'bg-cyan-600 text-white font-bold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              ❄️ KHL
+            </button>
           </div>
         </div>
       </div>
@@ -322,7 +333,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
                       <span className="font-bold text-slate-900 dark:text-white text-sm">{bet.matchup}</span>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{bet.date}</span>
                       <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        {bet.sport === 'NHL' ? '🏒 NHL' : '🏀 NBA'}
+                        {bet.sport === 'KHL' ? '❄️ KHL' : bet.sport === 'NHL' ? '🏒 NHL' : '🏀 NBA'}
                       </span>
                     </div>
 
@@ -336,7 +347,7 @@ export const BetTrackerTab: React.FC<BetTrackerTabProps> = ({
                       </span>
                       <span className="text-slate-300 dark:text-slate-600">•</span>
                       <span className="text-slate-600 dark:text-amber-300">
-                        Edge: {bet.edge > 0 ? `+${bet.edge.toFixed(1)}` : bet.edge.toFixed(1)} {bet.sport === 'NHL' ? '% EV' : 'pts'}
+                        Edge: {bet.edge > 0 ? `+${bet.edge.toFixed(1)}` : bet.edge.toFixed(1)} {bet.sport === 'NHL' || bet.sport === 'KHL' ? '% EV' : 'pts'}
                       </span>
                     </div>
                   </div>
