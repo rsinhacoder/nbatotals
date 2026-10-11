@@ -201,7 +201,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
       'Date',
       'Matchup',
       'Model Pick Value',
-      'Current Value Achieved',
+      'Actual Score After Game',
       'Value Differential',
       'Market Category',
       'Closing Line',
@@ -222,7 +222,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
       p.date,
       `"${p.matchup}"`,
       `"${p.modelPickValue || p.marketName}"`,
-      `"${p.currentValue || ''}"`,
+      `"${p.awayScore}-${p.homeScore} (${p.actualTotal} Total)"`,
       `"${p.valueDifferential || ''}"`,
       p.marketCategory,
       p.sportsbookLine,
@@ -273,7 +273,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             Model Correctness &amp; Pick Accuracy
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
-            Verifying algorithmic edges by evaluating the chosen <strong className="text-white">Model Pick Value</strong> against the achieved <strong className="text-white">Current Value</strong> in real games to determine <strong className="text-emerald-400">SUCCESS</strong> or <strong className="text-rose-400">FAILURE</strong>.
+            Verifying algorithmic edges by evaluating the chosen <strong className="text-white">Model Pick Value</strong> against the <strong className="text-white">Actual Score after the game</strong> to determine <strong className="text-emerald-400">SUCCESS</strong> or <strong className="text-rose-400">FAILURE</strong>.
           </p>
         </div>
 
@@ -835,7 +835,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                 <th className="py-2.5 px-3">Date &amp; Sport</th>
                 <th className="py-2.5 px-3">Matchup</th>
                 <th className="py-2.5 px-3 font-black text-blue-600 dark:text-blue-400">🎯 Model Pick Value</th>
-                <th className="py-2.5 px-3 font-black text-slate-900 dark:text-white">⚡ Current Value</th>
+                <th className="py-2.5 px-3 font-black text-slate-900 dark:text-white">🏁 Actual Score (Final)</th>
                 <th className="py-2.5 px-3">Margin / Clearance</th>
                 <th className="py-2.5 px-3">Model Proj</th>
                 <th className="py-2.5 px-3 text-center">Correctness</th>
@@ -872,7 +872,15 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                       </div>
                     </td>
                     <td className="py-2.5 px-3 font-mono font-black text-slate-900 dark:text-white whitespace-nowrap">
-                      <span className="text-xs">{pick.currentValue || `${pick.actualTotal} Total`}</span>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          {pick.awayScore} - {pick.homeScore}
+                        </span>
+                        <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
+                          Total: {pick.actualTotal} {pick.sport === 'NHL' ? 'Goals' : 'Pts'}
+                          {pick.marketCategory === 'SOG' && pick.actualShots ? ` · ${pick.actualShots.total} SOG` : ''}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-2.5 px-3 font-mono text-xs whitespace-nowrap">
                       <span className={isSuccess ? 'text-emerald-600 dark:text-emerald-400 font-bold' : isFailure ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-400'}>
@@ -1040,12 +1048,12 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                       </div>
                     </div>
 
-                    {/* Middle: Dedicated "Model Pick Value vs Current Value" Panel (Col 5) */}
+                    {/* Middle: Dedicated "Model Pick Value vs Actual Score (After Game)" Panel (Col 5) */}
                     <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-900/70 rounded-xl p-3 border border-slate-200 dark:border-slate-800/80 space-y-2">
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
                         <span className="flex items-center gap-1">
                           <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-                          Model Pick Value vs. Current Value
+                          Model Pick Value vs. Actual Score (After Game)
                         </span>
                         <span
                           className={`font-black ${
@@ -1077,16 +1085,19 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                           </span>
                         </div>
 
-                        {/* Current Value Achieved */}
+                        {/* Actual Score After Game */}
                         <div className="bg-white dark:bg-slate-950/70 p-2 rounded-lg border border-slate-200/70 dark:border-slate-800/70">
                           <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
-                            ⚡ Current Value
+                            🏁 Actual Score After Game
                           </span>
                           <span
                             className="font-mono font-black text-xs text-slate-900 dark:text-white block mt-0.5 truncate"
-                            title={pick.currentValue || `${pick.actualTotal}`}
+                            title={`${pick.awayScore} - ${pick.homeScore} (${pick.actualTotal} Total)`}
                           >
-                            {pick.currentValue || `${pick.actualTotal} Total`}
+                            {pick.awayScore} - {pick.homeScore}
+                            <span className="text-[10px] font-normal text-indigo-600 dark:text-indigo-400 ml-1 font-sans">
+                              ({pick.actualTotal} {pick.sport === 'NHL' ? 'Goals' : 'Pts'})
+                            </span>
                           </span>
                           <span
                             className={`text-[10px] block mt-0.5 font-semibold truncate ${

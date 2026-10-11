@@ -33,9 +33,10 @@ export interface GradedModelPick {
   confidence: 'HIGH' | 'MEDIUM' | 'LEAN';
   starRating: 1 | 2 | 3 | 4 | 5;
 
-  // Actual Game Outcome & Current Value Achieved
-  currentValue?: string; // e.g. "212 Total Pts", "6 Total Goals", "64 Total SOG"
-  valueDifferential?: string; // e.g. "+12.5 pts buffer (Under won)", "-1.5 goals deficit"
+  // Actual Game Outcome & Box Score After Game
+  actualScoreText?: string; // e.g. "107 - 105 (Total: 212 Pts)" or "2 - 1 (Total: 3 Goals)"
+  currentValue?: string; // For backward compatibility
+  valueDifferential?: string; // e.g. "+8.5 pts buffer (Under covered)", "-1.5 goals deficit"
   awayScore: number;
   homeScore: number;
   actualTotal: number;

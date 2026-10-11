@@ -62,11 +62,14 @@ export function enrichPickComparison(pick: GradedModelPick): GradedModelPick {
     }
   }
 
+  const actualScoreText = `${pick.awayScore} - ${pick.homeScore} (Total: ${actualTotal} ${unit})`;
+
   return {
     ...pick,
     season: pick.season || '2024-25',
     modelPickValue,
-    currentValue,
+    actualScoreText,
+    currentValue: currentValue || actualScoreText,
     valueDifferential,
     correctness: pick.outcome === 'WON' ? 'SUCCESS' : pick.outcome === 'LOST' ? 'FAILURE' : 'PUSH',
   };
