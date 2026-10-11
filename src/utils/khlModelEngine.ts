@@ -163,7 +163,7 @@ export function runKHLForecastingModel(params: KHLModelParameters) {
   let probOver5_5 = 0;
   let probUnder5_5 = 0;
   let probHomeCoverMinus1_5 = 0;
-  let probAwayCoverPlus1_5 = 0;
+  let probAwayCoverMinus1_5 = 0;
 
   for (let h = 0; h <= maxGoals; h++) {
     for (let a = 0; a <= maxGoals; a++) {
@@ -185,7 +185,7 @@ export function runKHLForecastingModel(params: KHLModelParameters) {
       else probUnder5_5 += p;
 
       if (h - a >= 2) probHomeCoverMinus1_5 += p;
-      else probAwayCoverPlus1_5 += p;
+      if (a - h >= 2) probAwayCoverMinus1_5 += p;
     }
   }
 
@@ -281,43 +281,55 @@ export function runKHLForecastingModel(params: KHLModelParameters) {
   });
 
   // Puckline Market
-  const spreadLine = params.sportsbookSpread || -1.5;
+  let isHomeSpreadPlus = false;
+  if (params.sportsbookSpread !== undefined) {
+    isHomeSpreadPlus = params.sportsbookSpread > 0;
+  } else if (params.moneylineHome && params.moneylineAway) {
+    isHomeSpreadPlus = americanToDecimal(params.moneylineAway) < americanToDecimal(params.moneylineHome);
+  }
+
+  const homeSpreadLine = isHomeSpreadPlus ? '+1.5' : '-1.5';
+  const awaySpreadLine = isHomeSpreadPlus ? '-1.5' : '+1.5';
+
+  const probHomeCover = isHomeSpreadPlus ? (1 - probAwayCoverMinus1_5) : probHomeCoverMinus1_5;
+  const probAwayCover = isHomeSpreadPlus ? probAwayCoverMinus1_5 : (1 - probHomeCoverMinus1_5);
+
   const spreadHomeOdds = params.spreadHomeOdds || '+145';
   const spreadAwayOdds = params.spreadAwayOdds || '-175';
   const decPuckHome = americanToDecimal(spreadHomeOdds);
   const decPuckAway = americanToDecimal(spreadAwayOdds);
 
-  const edgePuckHome = Number(((probHomeCoverMinus1_5 * decPuckHome - 1) * 100).toFixed(1));
-  const edgePuckAway = Number(((probAwayCoverPlus1_5 * decPuckAway - 1) * 100).toFixed(1));
+  const edgePuckHome = Number(((probHomeCover * decPuckHome - 1) * 100).toFixed(1));
+  const edgePuckAway = Number(((probAwayCover * decPuckAway - 1) * 100).toFixed(1));
 
   evaluatedMarkets.push({
     marketType: 'PUCKLINE_HOME',
-    marketName: `${home.abbreviation} ${spreadLine} Puckline`,
-    sportsbookLine: String(spreadLine),
+    marketName: `${home.abbreviation} ${homeSpreadLine} Puckline`,
+    sportsbookLine: homeSpreadLine,
     sportsbookOdds: spreadHomeOdds,
     sportsbookDecimalOdds: decPuckHome,
-    modelProbability: Number(probHomeCoverMinus1_5.toFixed(3)),
+    modelProbability: Number(probHomeCover.toFixed(3)),
     sportsbookImpliedProb: americanToImpliedProb(spreadHomeOdds),
     edgePercent: edgePuckHome,
     confidence: edgePuckHome >= 8.0 ? 'HIGH' : edgePuckHome >= 5.0 ? 'MEDIUM' : 'LEAN',
     starRating: edgePuckHome >= 8.0 ? 5 : edgePuckHome >= 5.0 ? 4 : 3,
     recommended: edgePuckHome >= 5.0,
-    isModelFavored: probHomeCoverMinus1_5 >= 0.50,
+    isModelFavored: probHomeCover >= 0.50,
   });
 
   evaluatedMarkets.push({
     marketType: 'PUCKLINE_AWAY',
-    marketName: `${away.abbreviation} +1.5 Puckline`,
-    sportsbookLine: '+1.5',
+    marketName: `${away.abbreviation} ${awaySpreadLine} Puckline`,
+    sportsbookLine: awaySpreadLine,
     sportsbookOdds: spreadAwayOdds,
     sportsbookDecimalOdds: decPuckAway,
-    modelProbability: Number(probAwayCoverPlus1_5.toFixed(3)),
+    modelProbability: Number(probAwayCover.toFixed(3)),
     sportsbookImpliedProb: americanToImpliedProb(spreadAwayOdds),
     edgePercent: edgePuckAway,
     confidence: edgePuckAway >= 8.0 ? 'HIGH' : edgePuckAway >= 5.0 ? 'MEDIUM' : 'LEAN',
     starRating: edgePuckAway >= 8.0 ? 5 : edgePuckAway >= 5.0 ? 4 : 3,
     recommended: edgePuckAway >= 5.0,
-    isModelFavored: probAwayCoverPlus1_5 >= 0.50,
+    isModelFavored: probAwayCover >= 0.50,
   });
 
   // 3-Way Regulation Draw (High-value European hockey market)
@@ -425,8 +437,8 @@ export function runKHLForecastingModel(params: KHLModelParameters) {
     probRegulationDraw: Number(probRegDraw.toFixed(3)),
     probHomeWinFullGame: Number(probHomeWinFull.toFixed(3)),
     probAwayWinFullGame: Number(probAwayWinFull.toFixed(3)),
-    probHomeCoverSpread: Number(probHomeCoverMinus1_5.toFixed(3)),
-    probAwayCoverSpread: Number(probAwayCoverPlus1_5.toFixed(3)),
+    probHomeCoverSpread: Number(probHomeCover.toFixed(3)),
+    probAwayCoverSpread: Number(probAwayCover.toFixed(3)),
     prob1POver1_5: Number(prob1POver1_5.toFixed(3)),
     prob1PUnder1_5: Number(prob1PUnder1_5.toFixed(3)),
     highestEdgeMarket,

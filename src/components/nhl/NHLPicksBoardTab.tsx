@@ -685,7 +685,7 @@ export const NHLPicksBoardTab: React.FC<NHLPicksBoardTabProps> = ({
                         </div>
 
                         <div className="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                          <span>Puckline: {homeProf.abbreviation} {match.sportsbookSpread} ({match.spreadHomeOdds})</span>
+                          <span>Puckline: {homeProf.abbreviation} {match.sportsbookSpread > 0 ? `+${match.sportsbookSpread}` : match.sportsbookSpread} ({match.spreadHomeOdds})</span>
                           <span>1P O/U 1.5: {(match.prob1POver1_5 * 100).toFixed(0)}% Over</span>
                         </div>
 

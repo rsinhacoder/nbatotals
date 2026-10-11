@@ -267,18 +267,41 @@ export function runNHLForecastingModel(params: NHLModelParameters) {
   });
 
   // Market 2: Puckline Spread (-1.5 / +1.5)
+  // Determine if Home is favorite (-1.5) or underdog (+1.5)
+  let isHomeSpreadPlus = false;
+  if (params.sportsbookSpread !== undefined) {
+    isHomeSpreadPlus = params.sportsbookSpread > 0;
+  } else if (params.moneylineHome && params.moneylineAway) {
+    // If Away decimal odds < Home decimal odds, Away is favorite -> Home is +1.5
+    isHomeSpreadPlus = americanToDecimal(params.moneylineAway) < americanToDecimal(params.moneylineHome);
+  } else {
+    isHomeSpreadPlus = lambdaAway > lambdaHome;
+  }
+
+  const homeSpreadLine = isHomeSpreadPlus ? '+1.5' : '-1.5';
+  const awaySpreadLine = isHomeSpreadPlus ? '-1.5' : '+1.5';
+
+  // Model probability:
+  // If Home is -1.5: Home covers if H - A >= 2 (homeMinus1_5)
+  // If Home is +1.5: Home covers if H - A >= -1, i.e. Away does NOT win by 2+ (1 - awayMinus1_5)
+  const probHomeCover = isHomeSpreadPlus ? (1 - awayMinus1_5) : homeMinus1_5;
+
+  // If Away is +1.5: Away covers if A - H >= -1, i.e. Home does NOT win by 2+ (1 - homeMinus1_5)
+  // If Away is -1.5: Away covers if A - H >= 2 (awayMinus1_5)
+  const probAwayCover = isHomeSpreadPlus ? awayMinus1_5 : (1 - homeMinus1_5);
+
   const decPuckHome = americanToDecimal(sbSpreadHomeOdds);
   const decPuckAway = americanToDecimal(sbSpreadAwayOdds);
-  const evPuckHome = Number(((homeMinus1_5 * decPuckHome - 1) * 100).toFixed(2));
-  const evPuckAway = Number((((1 - homeMinus1_5) * decPuckAway - 1) * 100).toFixed(2));
+  const evPuckHome = Number(((probHomeCover * decPuckHome - 1) * 100).toFixed(2));
+  const evPuckAway = Number(((probAwayCover * decPuckAway - 1) * 100).toFixed(2));
 
   allMarkets.push({
     marketType: 'PUCKLINE_HOME',
-    marketName: `${homeProf.abbreviation} -1.5 (Puckline)`,
-    sportsbookLine: '-1.5',
+    marketName: `${homeProf.abbreviation} ${homeSpreadLine} (Puckline)`,
+    sportsbookLine: homeSpreadLine,
     sportsbookOdds: sbSpreadHomeOdds,
     sportsbookDecimalOdds: decPuckHome,
-    modelProbability: Number(homeMinus1_5.toFixed(3)),
+    modelProbability: Number(probHomeCover.toFixed(3)),
     sportsbookImpliedProb: americanToImpliedProb(sbSpreadHomeOdds),
     edgePercent: evPuckHome,
     confidence: evPuckHome >= 7.5 ? 'HIGH' : evPuckHome >= 4.5 ? 'MEDIUM' : evPuckHome >= 1.5 ? 'LEAN' : 'AVOID',
@@ -288,11 +311,11 @@ export function runNHLForecastingModel(params: NHLModelParameters) {
 
   allMarkets.push({
     marketType: 'PUCKLINE_AWAY',
-    marketName: `${awayProf.abbreviation} +1.5 (Puckline)`,
-    sportsbookLine: '+1.5',
+    marketName: `${awayProf.abbreviation} ${awaySpreadLine} (Puckline)`,
+    sportsbookLine: awaySpreadLine,
     sportsbookOdds: sbSpreadAwayOdds,
     sportsbookDecimalOdds: decPuckAway,
-    modelProbability: Number((1 - homeMinus1_5).toFixed(3)),
+    modelProbability: Number(probAwayCover.toFixed(3)),
     sportsbookImpliedProb: americanToImpliedProb(sbSpreadAwayOdds),
     edgePercent: evPuckAway,
     confidence: evPuckAway >= 7.5 ? 'HIGH' : evPuckAway >= 4.5 ? 'MEDIUM' : evPuckAway >= 1.5 ? 'LEAN' : 'AVOID',
@@ -525,8 +548,8 @@ export function runNHLForecastingModel(params: NHLModelParameters) {
     probRegulationDraw: Number(probRegDraw.toFixed(3)),
     probHomeWinFullGame: Number(probHomeWinFullGame.toFixed(3)),
     probAwayWinFullGame: Number(probAwayWinFullGame.toFixed(3)),
-    probHomeCoverSpread: Number(homeMinus1_5.toFixed(3)),
-    probAwayCoverSpread: Number((1 - homeMinus1_5).toFixed(3)),
+    probHomeCoverSpread: Number(probHomeCover.toFixed(3)),
+    probAwayCoverSpread: Number(probAwayCover.toFixed(3)),
     prob1POver1_5: Number(prob1POver1_5.toFixed(3)),
     prob1PUnder1_5: Number(prob1PUnder1_5.toFixed(3)),
     highestEdgeMarket,

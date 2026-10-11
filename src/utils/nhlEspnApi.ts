@@ -65,6 +65,15 @@ export async function fetchLiveUpcomingNHLSchedule(daysAhead: number = 5): Promi
           if (oddsObj.total?.under?.close?.odds) {
             totalUnderOdds = oddsObj.total.under.close.odds;
           }
+          if (oddsObj.pointSpread?.home?.close?.line) {
+            sportsbookSpread = parseFloat(oddsObj.pointSpread.home.close.line);
+          } else if (oddsObj.pointSpread?.away?.close?.line) {
+            sportsbookSpread = -parseFloat(oddsObj.pointSpread.away.close.line);
+          } else if (oddsObj.awayTeamOdds?.favorite === true) {
+            sportsbookSpread = 1.5;
+          } else if (oddsObj.homeTeamOdds?.favorite === true) {
+            sportsbookSpread = -1.5;
+          }
           if (oddsObj.pointSpread?.home?.close?.odds) {
             spreadHomeOdds = oddsObj.pointSpread.home.close.odds;
           }
@@ -448,6 +457,9 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
     const awayProf = getNHLTeamProfile(m.away);
     const matchDate = getDateStr(m.dateOffset);
 
+    const isAwayFavored = m.mlAway.startsWith('-') && !m.mlHome.startsWith('-');
+    const sampleSpread = isAwayFavored ? 1.5 : -1.5;
+
     const forecast = runNHLForecastingModel({
       homeTeam: m.home,
       awayTeam: m.away,
@@ -458,6 +470,7 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
       sportsbookTotal: m.total,
       totalOverOdds: m.overOdds,
       totalUnderOdds: m.underOdds,
+      sportsbookSpread: sampleSpread,
       spreadHomeOdds: m.puckHomeOdds,
       spreadAwayOdds: m.puckAwayOdds,
       moneylineHome: m.mlHome,
@@ -483,7 +496,7 @@ export function getCuratedUpcomingNHLMatches(): NHLUpcomingMatch[] {
       sportsbookTotal: m.total,
       totalOverOdds: m.overOdds,
       totalUnderOdds: m.underOdds,
-      sportsbookSpread: -1.5,
+      sportsbookSpread: sampleSpread,
       spreadHomeOdds: m.puckHomeOdds,
       spreadAwayOdds: m.puckAwayOdds,
       moneylineHome: m.mlHome,
