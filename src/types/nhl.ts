@@ -9,18 +9,21 @@ export type NHLMarketType =
   | 'REGULATION_AWAY' 
   | 'REGULATION_DRAW'
   | 'P1_OVER' 
-  | 'P1_UNDER';
+  | 'P1_UNDER'
+  | 'SOG_TOTAL_OVER'
+  | 'SOG_TOTAL_UNDER'
+  | 'FACEOFFS_TOTAL';
 
 export interface NHLMarketEdge {
   marketType: NHLMarketType;
-  marketName: string; // e.g. "Over 5.5", "CAR -1.5", "Home ML", "1st Period Over 1.5"
-  sportsbookLine: string; // e.g. "5.5", "-1.5", "+150"
+  marketName: string; // e.g. "Over 5.5", "CAR -1.5", "Home ML", "1st Period Over 1.5", "Over 61.5 SOG"
+  sportsbookLine: string; // e.g. "5.5", "-1.5", "+150", "61.5"
   sportsbookOdds: string; // American odds: "-110", "+145", etc.
   sportsbookDecimalOdds: number; // e.g. 1.91, 2.45
   modelProbability: number; // e.g. 0.582 (58.2%)
   sportsbookImpliedProb: number; // e.g. 0.524 (52.4%)
   edgePercent: number; // EV%: (modelProb * decimalOdds - 1) * 100, e.g. +7.4%
-  pointOrGoalEdge?: number; // Model Total - Sportsbook Line, e.g. +0.45 goals
+  pointOrGoalEdge?: number; // Model Total - Sportsbook Line, e.g. +0.45 goals or +2.1 SOG
   confidence: 'HIGH' | 'MEDIUM' | 'LEAN' | 'AVOID';
   starRating: 1 | 2 | 3 | 4 | 5;
   recommended: boolean;
@@ -65,6 +68,11 @@ export interface NHLTeamMetrics {
   shotsFor60: number; // Shots on goal / 60
   shotsAgainst60: number;
 
+  // Faceoffs Metrics
+  faceoffWinPct: number; // 5-season Faceoff Win % (e.g. 52.4%)
+  faceoffsPerGame: number; // Total draws per game (e.g. 58.5)
+  offZoneFaceoffPct: number; // Offensive zone FO%
+
   // Goalies
   primaryGoalie: NHLStartingGoalie;
   backupGoalie: NHLStartingGoalie;
@@ -101,12 +109,26 @@ export interface NHLUpcomingMatch {
   moneylineHome: string; // e.g. "-160"
   moneylineAway: string; // e.g. "+135"
 
-  // Model Projections
+  // Model Goal Projections
   modelProjectedHomeGoals: number; // Lambda Home
   modelProjectedAwayGoals: number; // Lambda Away
   modelProjectedTotal: number; // Total Expected Goals
   goalEdge: number; // modelProjectedTotal - sportsbookTotal
   
+  // Shots on Goal (SOG) Projections & Markets
+  projectedHomeShots: number; // e.g. 32.4
+  projectedAwayShots: number; // e.g. 28.8
+  projectedTotalShots: number; // e.g. 61.2
+  sportsbookShotsTotal: number; // e.g. 60.5 or 61.5
+  shotsEdge: number; // projectedTotalShots - sportsbookShotsTotal
+  
+  // Faceoffs Projections
+  projectedTotalFaceoffs: number; // e.g. 58.4
+  projectedHomeFaceoffWinPct: number; // e.g. 52.6%
+  projectedAwayFaceoffWinPct: number; // e.g. 47.4%
+  projectedHomeFaceoffsWon: number;
+  projectedAwayFaceoffsWon: number;
+
   // Probabilities
   probOver5_5: number;
   probUnder5_5: number;
@@ -136,6 +158,7 @@ export interface NHLUpcomingMatch {
     goalieFactor: string;
     specialTeamsFactor: string;
     fatigueFactor: string;
+    sogAndFaceoffsFactor: string;
   };
 }
 
@@ -154,4 +177,7 @@ export interface NHLSeasonSummary {
   oneGoalMarginPct: number;
   twoGoalMarginPct: number;
   p1Over1_5Pct: number;
+  avgShotsPerGame: number;
+  avgFaceoffsPerGame: number;
+  leagueShootingPct: number;
 }

@@ -26,6 +26,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 75.2,
     shotsFor60: 27.8,
     shotsAgainst60: 33.6,
+    faceoffWinPct: 47,
+    faceoffsPerGame: 57.8,
+    offZoneFaceoffPct: 46.8,
     primaryGoalie: {
       name: 'Lukas Dostal',
       confirmed: false,
@@ -68,6 +71,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 82.5,
     shotsFor60: 30.5,
     shotsAgainst60: 28.2,
+    faceoffWinPct: 53.8,
+    faceoffsPerGame: 58.5,
+    offZoneFaceoffPct: 54.2,
     primaryGoalie: {
       name: 'Jeremy Swayman',
       confirmed: false,
@@ -110,6 +116,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 78.9,
     shotsFor60: 30.2,
     shotsAgainst60: 30.8,
+    faceoffWinPct: 46.2,
+    faceoffsPerGame: 58.2,
+    offZoneFaceoffPct: 45.8,
     primaryGoalie: {
       name: 'Ukko-Pekka Luukkonen',
       confirmed: false,
@@ -152,6 +161,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 84.8,
     shotsFor60: 34.8,
     shotsAgainst60: 25.4,
+    faceoffWinPct: 53.2,
+    faceoffsPerGame: 57.8,
+    offZoneFaceoffPct: 53.9,
     primaryGoalie: {
       name: 'Frederik Andersen',
       confirmed: false,
@@ -194,6 +206,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 76.5,
     shotsFor60: 29.5,
     shotsAgainst60: 33.8,
+    faceoffWinPct: 48.2,
+    faceoffsPerGame: 58,
+    offZoneFaceoffPct: 48,
     primaryGoalie: {
       name: 'Elvis Merzlikins',
       confirmed: false,
@@ -236,6 +251,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 81.0,
     shotsFor60: 31.4,
     shotsAgainst60: 30.1,
+    faceoffWinPct: 50.8,
+    faceoffsPerGame: 58.2,
+    offZoneFaceoffPct: 50.4,
     primaryGoalie: {
       name: 'Dustin Wolf',
       confirmed: false,
@@ -278,6 +296,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 77.4,
     shotsFor60: 27.2,
     shotsAgainst60: 33.1,
+    faceoffWinPct: 46.5,
+    faceoffsPerGame: 57.6,
+    offZoneFaceoffPct: 46,
     primaryGoalie: {
       name: 'Petr Mrazek',
       confirmed: false,
@@ -320,6 +341,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 81.5,
     shotsFor60: 33.5,
     shotsAgainst60: 28.8,
+    faceoffWinPct: 49.5,
+    faceoffsPerGame: 58.4,
+    offZoneFaceoffPct: 50.2,
     primaryGoalie: {
       name: 'Alexandar Georgiev',
       confirmed: false,
@@ -362,6 +386,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 82.0,
     shotsFor60: 31.8,
     shotsAgainst60: 28.5,
+    faceoffWinPct: 54.2,
+    faceoffsPerGame: 59,
+    offZoneFaceoffPct: 55,
     primaryGoalie: {
       name: 'Jake Oettinger',
       confirmed: false,
@@ -404,6 +431,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 79.2,
     shotsFor60: 29.2,
     shotsAgainst60: 32.4,
+    faceoffWinPct: 49.8,
+    faceoffsPerGame: 58.1,
+    offZoneFaceoffPct: 49.5,
     primaryGoalie: {
       name: 'Cam Talbot',
       confirmed: false,
@@ -446,6 +476,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 80.5,
     shotsFor60: 33.8,
     shotsAgainst60: 28.1,
+    faceoffWinPct: 52.4,
+    faceoffsPerGame: 58.6,
+    offZoneFaceoffPct: 53,
     primaryGoalie: {
       name: 'Stuart Skinner',
       confirmed: false,
@@ -488,6 +521,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 82.8,
     shotsFor60: 34.2,
     shotsAgainst60: 27.6,
+    faceoffWinPct: 52,
+    faceoffsPerGame: 58.5,
+    offZoneFaceoffPct: 52.5,
     primaryGoalie: {
       name: 'Sergei Bobrovsky',
       confirmed: false,
@@ -530,6 +566,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 84.6,
     shotsFor60: 32.0,
     shotsAgainst60: 27.9,
+    faceoffWinPct: 51.5,
+    faceoffsPerGame: 58.4,
+    offZoneFaceoffPct: 51.8,
     primaryGoalie: {
       name: 'Darcy Kuemper',
       confirmed: false,
@@ -572,6 +611,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 75.8,
     shotsFor60: 30.6,
     shotsAgainst60: 30.2,
+    faceoffWinPct: 48.8,
+    faceoffsPerGame: 58,
+    offZoneFaceoffPct: 48.5,
     primaryGoalie: {
       name: 'Filip Gustavsson',
       confirmed: false,
@@ -614,6 +656,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 77.2,
     shotsFor60: 28.5,
     shotsAgainst60: 33.4,
+    faceoffWinPct: 49.2,
+    faceoffsPerGame: 58.2,
+    offZoneFaceoffPct: 48.8,
     primaryGoalie: {
       name: 'Sam Montembeault',
       confirmed: false,
@@ -656,6 +701,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 81.4,
     shotsFor60: 32.4,
     shotsAgainst60: 29.8,
+    faceoffWinPct: 50.4,
+    faceoffsPerGame: 58.4,
+    offZoneFaceoffPct: 51,
     primaryGoalie: {
       name: 'Jacob Markstrom',
       confirmed: false,
@@ -698,6 +746,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 78.5,
     shotsFor60: 31.2,
     shotsAgainst60: 30.5,
+    faceoffWinPct: 50.2,
+    faceoffsPerGame: 58.3,
+    offZoneFaceoffPct: 50.1,
     primaryGoalie: {
       name: 'Juuse Saros',
       confirmed: false,
@@ -740,6 +791,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 76.8,
     shotsFor60: 29.8,
     shotsAgainst60: 32.5,
+    faceoffWinPct: 51.2,
+    faceoffsPerGame: 58,
+    offZoneFaceoffPct: 50.8,
     primaryGoalie: {
       name: 'Ilya Sorokin',
       confirmed: false,
@@ -782,6 +836,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 83.2,
     shotsFor60: 31.0,
     shotsAgainst60: 29.5,
+    faceoffWinPct: 52.8,
+    faceoffsPerGame: 58.6,
+    offZoneFaceoffPct: 53.2,
     primaryGoalie: {
       name: 'Igor Shesterkin',
       confirmed: false,
@@ -824,6 +881,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 76.0,
     shotsFor60: 32.1,
     shotsAgainst60: 30.6,
+    faceoffWinPct: 50.6,
+    faceoffsPerGame: 58.5,
+    offZoneFaceoffPct: 50.4,
     primaryGoalie: {
       name: 'Linus Ullmark',
       confirmed: false,
@@ -866,6 +926,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 81.8,
     shotsFor60: 31.0,
     shotsAgainst60: 28.5,
+    faceoffWinPct: 51,
+    faceoffsPerGame: 58.2,
+    offZoneFaceoffPct: 50.8,
     primaryGoalie: {
       name: 'Samuel Ersson',
       confirmed: false,
@@ -908,6 +971,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 80.2,
     shotsFor60: 32.8,
     shotsAgainst60: 30.5,
+    faceoffWinPct: 53.5,
+    faceoffsPerGame: 58.8,
+    offZoneFaceoffPct: 54,
     primaryGoalie: {
       name: 'Tristan Jarry',
       confirmed: false,
@@ -950,6 +1016,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 79.5,
     shotsFor60: 29.5,
     shotsAgainst60: 29.0,
+    faceoffWinPct: 47.8,
+    faceoffsPerGame: 57.9,
+    offZoneFaceoffPct: 47.5,
     primaryGoalie: {
       name: 'Joey Daccord',
       confirmed: false,
@@ -992,6 +1061,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 74.2,
     shotsFor60: 26.2,
     shotsAgainst60: 35.5,
+    faceoffWinPct: 47.4,
+    faceoffsPerGame: 58.4,
+    offZoneFaceoffPct: 47.2,
     primaryGoalie: {
       name: 'Mackenzie Blackwood',
       confirmed: false,
@@ -1034,6 +1106,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 78.5,
     shotsFor60: 29.0,
     shotsAgainst60: 32.2,
+    faceoffWinPct: 49.8,
+    faceoffsPerGame: 58,
+    offZoneFaceoffPct: 49.5,
     primaryGoalie: {
       name: 'Jordan Binnington',
       confirmed: false,
@@ -1076,6 +1151,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 83.3,
     shotsFor60: 31.8,
     shotsAgainst60: 29.8,
+    faceoffWinPct: 51.8,
+    faceoffsPerGame: 58.1,
+    offZoneFaceoffPct: 52.2,
     primaryGoalie: {
       name: 'Andrei Vasilevskiy',
       confirmed: false,
@@ -1118,6 +1196,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 78.8,
     shotsFor60: 33.1,
     shotsAgainst60: 29.6,
+    faceoffWinPct: 53.5,
+    faceoffsPerGame: 58.6,
+    offZoneFaceoffPct: 54,
     primaryGoalie: {
       name: 'Anthony Stolarz',
       confirmed: false,
@@ -1160,6 +1241,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 78.2,
     shotsFor60: 28.8,
     shotsAgainst60: 32.2,
+    faceoffWinPct: 48.8,
+    faceoffsPerGame: 58.2,
+    offZoneFaceoffPct: 48.5,
     primaryGoalie: {
       name: 'Connor Ingram',
       confirmed: false,
@@ -1202,6 +1286,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 81.2,
     shotsFor60: 29.8,
     shotsAgainst60: 28.5,
+    faceoffWinPct: 51.8,
+    faceoffsPerGame: 57.8,
+    offZoneFaceoffPct: 52.1,
     primaryGoalie: {
       name: 'Thatcher Demko',
       confirmed: false,
@@ -1244,6 +1331,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 81.5,
     shotsFor60: 31.8,
     shotsAgainst60: 30.2,
+    faceoffWinPct: 50.5,
+    faceoffsPerGame: 58.2,
+    offZoneFaceoffPct: 50.8,
     primaryGoalie: {
       name: 'Adin Hill',
       confirmed: false,
@@ -1286,6 +1376,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 81.6,
     shotsFor60: 30.8,
     shotsAgainst60: 29.4,
+    faceoffWinPct: 50.8,
+    faceoffsPerGame: 57.9,
+    offZoneFaceoffPct: 50.5,
     primaryGoalie: {
       name: 'Connor Hellebuyck',
       confirmed: false,
@@ -1328,6 +1421,9 @@ export const NHL_TEAM_PROFILES: Record<string, NHLTeamMetrics> = {
     penaltyKillPct: 79.8,
     shotsFor60: 28.5,
     shotsAgainst60: 30.6,
+    faceoffWinPct: 48.5,
+    faceoffsPerGame: 58.4,
+    offZoneFaceoffPct: 48.8,
     primaryGoalie: {
       name: 'Charlie Lindgren',
       confirmed: false,

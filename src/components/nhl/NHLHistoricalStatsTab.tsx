@@ -22,7 +22,8 @@ import { getAllNHLTeams } from '../../data/nhlTeamProfiles';
 
 export const NHLHistoricalStatsTab: React.FC = () => {
   const teams = getAllNHLTeams();
-  const [sortField, setSortField] = useState<'fiveSeasonGPG' | 'fiveSeasonGAPG' | 'diff' | 'fiveSeasonWinPct'>('fiveSeasonGPG');
+  type SortFieldType = 'fiveSeasonGPG' | 'fiveSeasonGAPG' | 'diff' | 'xgf60' | 'shotsFor60' | 'shotsAgainst60' | 'faceoffWinPct' | 'fiveSeasonWinPct';
+  const [sortField, setSortField] = useState<SortFieldType>('fiveSeasonGPG');
   const [sortAsc, setSortAsc] = useState(false);
 
   // Compute team diffs and sort
@@ -32,12 +33,12 @@ export const NHLHistoricalStatsTab: React.FC = () => {
   }));
 
   teamRows.sort((a, b) => {
-    const valA = sortField === 'diff' ? a.diff : a[sortField];
-    const valB = sortField === 'diff' ? b.diff : b[sortField];
+    const valA = sortField === 'diff' ? a.diff : (a[sortField] ?? 0);
+    const valB = sortField === 'diff' ? b.diff : (b[sortField] ?? 0);
     return sortAsc ? valA - valB : valB - valA;
   });
 
-  const handleSort = (field: 'fiveSeasonGPG' | 'fiveSeasonGAPG' | 'diff' | 'fiveSeasonWinPct') => {
+  const handleSort = (field: SortFieldType) => {
     if (sortField === field) {
       setSortAsc(!sortAsc);
     } else {
@@ -68,27 +69,37 @@ export const NHLHistoricalStatsTab: React.FC = () => {
           </div>
         </div>
 
-        {/* 4 Key Stat Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-white/10 text-xs">
+        {/* 6 Key Stat Badges */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-4 border-t border-white/10 text-xs">
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <span className="text-slate-400 block mb-0.5">5-Season Aggregate Mean</span>
-            <span className="text-lg font-black text-white">{NHL_5_SEASON_AGGREGATE.avgGoalsPerGame} Goals/Game</span>
+            <span className="text-slate-400 block mb-0.5">Scoring Baseline</span>
+            <span className="text-base sm:text-lg font-black text-white">{NHL_5_SEASON_AGGREGATE.avgGoalsPerGame} G/Game</span>
             <span className="text-[10px] text-slate-400 block mt-0.5">Home: 3.21 | Road: 2.97</span>
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+            <span className="text-slate-400 block mb-0.5">Shots on Goal (SOG)</span>
+            <span className="text-base sm:text-lg font-black text-cyan-300">{NHL_5_SEASON_AGGREGATE.avgShotsPerGame} SOG/G</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">{NHL_5_SEASON_AGGREGATE.leagueShootingPct}% Shooting Pct</span>
+          </div>
+          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+            <span className="text-slate-400 block mb-0.5">Faceoff Draws</span>
+            <span className="text-base sm:text-lg font-black text-amber-300">{NHL_5_SEASON_AGGREGATE.avgFaceoffsPerGame} Draws/G</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">+1.2% Home Stick Edge</span>
+          </div>
+          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <span className="text-slate-400 block mb-0.5">Home Ice Advantage</span>
-            <span className="text-lg font-black text-cyan-300">+{NHL_5_SEASON_AGGREGATE.homeIceAdvantage} Net Goals</span>
+            <span className="text-base sm:text-lg font-black text-indigo-300">+{NHL_5_SEASON_AGGREGATE.homeIceAdvantage} Net Goals</span>
             <span className="text-[10px] text-slate-400 block mt-0.5">{NHL_5_SEASON_AGGREGATE.homeWinPct}% Win Rate</span>
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <span className="text-slate-400 block mb-0.5">Over 5.5 Hit Rate</span>
-            <span className="text-lg font-black text-emerald-400">{NHL_5_SEASON_AGGREGATE.over5_5Pct}%</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Push on 6.0: {NHL_5_SEASON_AGGREGATE.push6_0Pct}%</span>
+            <span className="text-base sm:text-lg font-black text-emerald-400">{NHL_5_SEASON_AGGREGATE.over5_5Pct}%</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Push 6.0: {NHL_5_SEASON_AGGREGATE.push6_0Pct}%</span>
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <span className="text-slate-400 block mb-0.5">Backtest Model ROI (5-Yr)</span>
-            <span className="text-lg font-black text-emerald-400">+{NHL_MODEL_5_SEASON_BACKTEST.roi}%</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">{NHL_MODEL_5_SEASON_BACKTEST.winRate}% Win Rate (≥5% EV)</span>
+            <span className="text-slate-400 block mb-0.5">Backtest ROI (5-Yr)</span>
+            <span className="text-base sm:text-lg font-black text-emerald-400">+{NHL_MODEL_5_SEASON_BACKTEST.roi}%</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">{NHL_MODEL_5_SEASON_BACKTEST.winRate}% Win Rate</span>
           </div>
         </div>
       </div>
@@ -107,6 +118,8 @@ export const NHLHistoricalStatsTab: React.FC = () => {
                 <th className="py-2.5 px-3">Season</th>
                 <th className="py-2.5 px-3">Games</th>
                 <th className="py-2.5 px-3">Goals / Game</th>
+                <th className="py-2.5 px-3">SOG / Game</th>
+                <th className="py-2.5 px-3">Faceoffs / Game</th>
                 <th className="py-2.5 px-3">Home GPG</th>
                 <th className="py-2.5 px-3">Road GPG</th>
                 <th className="py-2.5 px-3">Home Win %</th>
@@ -122,6 +135,8 @@ export const NHLHistoricalStatsTab: React.FC = () => {
                   <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">{s.season}</td>
                   <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-400">{s.games.toLocaleString()}</td>
                   <td className="py-2.5 px-3 font-mono font-black text-indigo-600 dark:text-indigo-400">{s.goalsPerGame}</td>
+                  <td className="py-2.5 px-3 font-mono font-bold text-cyan-600 dark:text-cyan-400">{s.avgShotsPerGame}</td>
+                  <td className="py-2.5 px-3 font-mono font-bold text-amber-600 dark:text-amber-400">{s.avgFaceoffsPerGame}</td>
                   <td className="py-2.5 px-3 font-mono text-slate-700 dark:text-slate-300">{s.homeGPG}</td>
                   <td className="py-2.5 px-3 font-mono text-slate-700 dark:text-slate-300">{s.roadGPG}</td>
                   <td className="py-2.5 px-3 font-mono text-slate-700 dark:text-slate-300">{s.homeWinPct}%</td>
@@ -248,7 +263,42 @@ export const NHLHistoricalStatsTab: React.FC = () => {
                     {sortField === 'diff' && (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
                   </span>
                 </th>
-                <th className="py-2.5 px-3">5v5 xGF/60</th>
+                <th
+                  onClick={() => handleSort('shotsFor60')}
+                  className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
+                >
+                  <span className="flex items-center gap-1">
+                    SF/60
+                    {sortField === 'shotsFor60' && (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                  </span>
+                </th>
+                <th
+                  onClick={() => handleSort('shotsAgainst60')}
+                  className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
+                >
+                  <span className="flex items-center gap-1">
+                    SA/60
+                    {sortField === 'shotsAgainst60' && (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                  </span>
+                </th>
+                <th
+                  onClick={() => handleSort('faceoffWinPct')}
+                  className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
+                >
+                  <span className="flex items-center gap-1">
+                    FO %
+                    {sortField === 'faceoffWinPct' && (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                  </span>
+                </th>
+                <th
+                  onClick={() => handleSort('xgf60')}
+                  className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
+                >
+                  <span className="flex items-center gap-1">
+                    5v5 xGF/60
+                    {sortField === 'xgf60' && (sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                  </span>
+                </th>
                 <th className="py-2.5 px-3">PP %</th>
                 <th className="py-2.5 px-3">PK %</th>
                 <th
@@ -285,6 +335,21 @@ export const NHLHistoricalStatsTab: React.FC = () => {
                     }`}
                   >
                     {t.diff > 0 ? `+${t.diff}` : t.diff}
+                  </td>
+                  <td className="py-2 px-3 font-mono text-slate-700 dark:text-slate-300">{t.shotsFor60}</td>
+                  <td className="py-2 px-3 font-mono text-slate-700 dark:text-slate-300">{t.shotsAgainst60}</td>
+                  <td className="py-2 px-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                    <span
+                      className={
+                        t.faceoffWinPct >= 52.0
+                          ? 'text-emerald-600 dark:text-emerald-400 font-black'
+                          : t.faceoffWinPct <= 48.0
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : ''
+                      }
+                    >
+                      {t.faceoffWinPct}%
+                    </span>
                   </td>
                   <td className="py-2 px-3 font-mono text-slate-700 dark:text-slate-300">{t.xgf60}</td>
                   <td className="py-2 px-3 font-mono text-slate-700 dark:text-slate-300">{t.powerPlayPct}%</td>

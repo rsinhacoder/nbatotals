@@ -33,7 +33,7 @@ export const NHLPicksBoardTab: React.FC<NHLPicksBoardTabProps> = ({
   onRefreshSchedule,
   isSyncingSchedule = false,
 }) => {
-  const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'HIGH_EV' | 'TOTALS' | 'PUCKLINE' | 'FIRST_PERIOD'>('ALL');
+  const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'HIGH_EV' | 'TOTALS' | 'PUCKLINE' | 'FIRST_PERIOD' | 'SOG'>('ALL');
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
 
   // Filter matches
@@ -49,6 +49,9 @@ export const NHLPicksBoardTab: React.FC<NHLPicksBoardTabProps> = ({
     }
     if (selectedFilter === 'FIRST_PERIOD') {
       return match.highestEdgeMarket.marketType === 'P1_OVER' || match.highestEdgeMarket.marketType === 'P1_UNDER';
+    }
+    if (selectedFilter === 'SOG') {
+      return match.highestEdgeMarket.marketType === 'SOG_TOTAL_OVER' || match.highestEdgeMarket.marketType === 'SOG_TOTAL_UNDER';
     }
     return true;
   });
@@ -180,6 +183,16 @@ export const NHLPicksBoardTab: React.FC<NHLPicksBoardTabProps> = ({
             }`}
           >
             1st Period O/U
+          </button>
+          <button
+            onClick={() => setSelectedFilter('SOG')}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+              selectedFilter === 'SOG'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Shots on Goal (SOG)
           </button>
         </div>
 
@@ -354,6 +367,24 @@ export const NHLPicksBoardTab: React.FC<NHLPicksBoardTabProps> = ({
                     <div className="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                       <span>Puckline: {homeProf.abbreviation} {match.sportsbookSpread} ({match.spreadHomeOdds})</span>
                       <span>1P O/U 1.5: {(match.prob1POver1_5 * 100).toFixed(0)}% Over</span>
+                    </div>
+
+                    {/* SOG and Faceoffs Live Quant Preview */}
+                    <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] font-mono">
+                      <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                        <span className="font-bold text-slate-400">SOG:</span>
+                        <span className="font-black text-slate-900 dark:text-white">
+                          {match.projectedAwayShots} - {match.projectedHomeShots}
+                        </span>
+                        <span className="text-[10px] text-slate-400">({match.projectedTotalShots} tot)</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                        <span className="font-bold text-slate-400">FO%:</span>
+                        <span className="font-black text-indigo-600 dark:text-indigo-400">
+                          {match.projectedHomeFaceoffWinPct}%
+                        </span>
+                        <span className="text-[10px] text-slate-400">~{match.projectedTotalFaceoffs} drws</span>
+                      </div>
                     </div>
                   </div>
 

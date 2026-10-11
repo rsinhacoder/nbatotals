@@ -16,6 +16,9 @@ export const NHL_5_SEASON_SUMMARIES: NHLSeasonSummary[] = [
     oneGoalMarginPct: 42.4,
     twoGoalMarginPct: 20.1,
     p1Over1_5Pct: 49.1,
+    avgShotsPerGame: 60.1,
+    avgFaceoffsPerGame: 57.8,
+    leagueShootingPct: 9.77,
   },
   {
     season: '2021-22',
@@ -32,6 +35,9 @@ export const NHL_5_SEASON_SUMMARIES: NHLSeasonSummary[] = [
     oneGoalMarginPct: 40.5,
     twoGoalMarginPct: 21.0,
     p1Over1_5Pct: 52.3,
+    avgShotsPerGame: 62.4,
+    avgFaceoffsPerGame: 58.4,
+    leagueShootingPct: 10.08,
   },
   {
     season: '2022-23',
@@ -48,6 +54,9 @@ export const NHL_5_SEASON_SUMMARIES: NHLSeasonSummary[] = [
     oneGoalMarginPct: 41.8,
     twoGoalMarginPct: 20.4,
     p1Over1_5Pct: 53.0,
+    avgShotsPerGame: 62.8,
+    avgFaceoffsPerGame: 58.8,
+    leagueShootingPct: 10.13,
   },
   {
     season: '2023-24',
@@ -64,6 +73,9 @@ export const NHL_5_SEASON_SUMMARIES: NHLSeasonSummary[] = [
     oneGoalMarginPct: 40.8,
     twoGoalMarginPct: 20.8,
     p1Over1_5Pct: 51.8,
+    avgShotsPerGame: 61.2,
+    avgFaceoffsPerGame: 58.2,
+    leagueShootingPct: 10.18,
   },
   {
     season: '2024-25',
@@ -80,6 +92,9 @@ export const NHL_5_SEASON_SUMMARIES: NHLSeasonSummary[] = [
     oneGoalMarginPct: 40.6,
     twoGoalMarginPct: 20.2,
     p1Over1_5Pct: 50.6,
+    avgShotsPerGame: 60.2,
+    avgFaceoffsPerGame: 58.0,
+    leagueShootingPct: 10.10,
   },
 ];
 
@@ -100,6 +115,12 @@ export const NHL_5_SEASON_AGGREGATE = {
   twoGoalGamesPct: 20.5,
   threePlusGamesPct: 38.3,
   p1Over1_5Pct: 51.4,
+  avgShotsPerGame: 61.2,
+  homeShotsPerGame: 31.2,
+  roadShotsPerGame: 30.0,
+  avgFaceoffsPerGame: 58.4,
+  leagueShootingPct: 10.10, // ~10.1% conversion rate
+  faceoffWinAdvantage: 0.44, // correlation with Corsi puck possession
 };
 
 // Goal Total Distribution (Empirical histogram from 6,115 games)

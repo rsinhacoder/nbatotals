@@ -332,6 +332,98 @@ export const NHLMatchupAnalyzerTab: React.FC<NHLMatchupAnalyzerTabProps> = ({
         </div>
       </div>
 
+      {/* Shots on Goal & Faceoff Battle Matrix */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Card A: Shots on Goal (SOG) Breakdown */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-cyan-500" />
+              Projected Shots on Goal (SOG)
+            </h4>
+            <span className="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400">
+              {forecast.projectedTotalShots} Total SOG (O/U 61.5)
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between text-xs font-bold mb-1">
+                <span>{awayProf.name} (Away)</span>
+                <span className="font-mono text-indigo-600 dark:text-indigo-400">{forecast.projectedAwayShots} SOG</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-indigo-600 h-full rounded-full transition-all"
+                  style={{ width: `${(forecast.projectedAwayShots / 45) * 100}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                <span>Season Rate: {awayProf.shotsFor60} SF/60</span>
+                <span>Goalie Saves Expected: ~{(forecast.projectedAwayShots * (1 - forecast.modelProjectedAwayGoals / forecast.projectedAwayShots)).toFixed(0)}</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs font-bold mb-1">
+                <span>{homeProf.name} (Home)</span>
+                <span className="font-mono text-cyan-600 dark:text-cyan-400">{forecast.projectedHomeShots} SOG</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-cyan-500 h-full rounded-full transition-all"
+                  style={{ width: `${(forecast.projectedHomeShots / 45) * 100}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                <span>Season Rate: {homeProf.shotsFor60} SF/60</span>
+                <span>Goalie Saves Expected: ~{(forecast.projectedHomeShots * (1 - forecast.modelProjectedHomeGoals / forecast.projectedHomeShots)).toFixed(0)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+            <span>SOG Edge vs 61.5 Line: <strong className={forecast.shotsEdge > 0 ? 'text-emerald-500' : 'text-amber-500'}>{forecast.shotsEdge > 0 ? `+${forecast.shotsEdge}` : forecast.shotsEdge} shots</strong></span>
+            <span>Est. Shooting %: {((forecast.modelProjectedTotal / forecast.projectedTotalShots) * 100).toFixed(1)}%</span>
+          </div>
+        </div>
+
+        {/* Card B: Total Faceoffs & Win Rate Battle */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
+              <Shield className="w-4 h-4 text-indigo-500" />
+              Total Faceoffs & Circle Dominance
+            </h4>
+            <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+              ~{forecast.projectedTotalFaceoffs} Expected Draws
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-3 text-center">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{awayProf.abbreviation} FO%</span>
+              <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
+                {forecast.projectedAwayFaceoffWinPct}%
+              </span>
+              <span className="text-[10px] text-slate-400 block">~{forecast.projectedAwayFaceoffsWon} draws won</span>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{homeProf.abbreviation} FO% (Home +1.2%)</span>
+              <span className="text-xl font-black font-mono text-indigo-600 dark:text-indigo-400">
+                {forecast.projectedHomeFaceoffWinPct}%
+              </span>
+              <span className="text-[10px] text-slate-400 block">~{forecast.projectedHomeFaceoffsWon} draws won</span>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+            <strong className="text-slate-700 dark:text-slate-300">Puck Possession Impact:</strong> {forecast.projectedHomeFaceoffWinPct >= forecast.projectedAwayFaceoffWinPct ? homeProf.name : awayProf.name} possesses the faceoff advantage, directly translating into extra offensive zone zone-starts and possession time.
+          </p>
+        </div>
+      </div>
+
       {/* Multi-Market Edge Evaluation Table */}
       <div className="p-5 rounded-2xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="flex items-center justify-between mb-3">

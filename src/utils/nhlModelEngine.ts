@@ -389,6 +389,87 @@ export function runNHLForecastingModel(params: NHLModelParameters) {
     recommended: evDraw >= 4.0,
   });
 
+  // 7. Shots on Goal (SOG) & Total Faceoffs Modeling
+  // SOG: Home advantage (+1.2 SOG) + FO% possession leverage
+  const homeFoBonus = (homeProf.faceoffWinPct - 50) * 0.12;
+  const awayFoBonus = (awayProf.faceoffWinPct - 50) * 0.12;
+
+  let rawHomeShots = (homeProf.shotsFor60 * 0.52 + awayProf.shotsAgainst60 * 0.48) + 1.2 + homeFoBonus;
+  let rawAwayShots = (awayProf.shotsFor60 * 0.52 + homeProf.shotsAgainst60 * 0.48) - 0.4 + awayFoBonus;
+
+  // Rest modifier on shots
+  if (homeRest === 0) rawHomeShots -= 1.1;
+  if (awayRest === 0) rawAwayShots -= 1.2;
+
+  const projectedHomeShots = Number(Math.max(22.0, Math.min(42.0, rawHomeShots)).toFixed(1));
+  const projectedAwayShots = Number(Math.max(20.0, Math.min(40.0, rawAwayShots)).toFixed(1));
+  const projectedTotalShots = Number((projectedHomeShots + projectedAwayShots).toFixed(1));
+
+  const sportsbookShotsTotal = 61.5;
+  const shotsEdge = Number((projectedTotalShots - sportsbookShotsTotal).toFixed(1));
+
+  // Normal CDF approximation for Shots on Goal Total (Std Dev ~ 7.2)
+  const sogStdDev = 7.2;
+  const sogZ = (sportsbookShotsTotal - projectedTotalShots) / sogStdDev;
+  // Error function approximation for Phi(z)
+  const phiZ = 1 / (1 + Math.exp(-0.07056 * Math.pow(sogZ, 3) - 1.5976 * sogZ));
+  const probSOGUnder = Number(phiZ.toFixed(3));
+  const probSOGOver = Number((1 - phiZ).toFixed(3));
+
+  const sbSOGOdds = '-115';
+  const decSOG = americanToDecimal(sbSOGOdds);
+  const evSOGOver = Number(((probSOGOver * decSOG - 1) * 100).toFixed(2));
+  const evSOGUnder = Number(((probSOGUnder * decSOG - 1) * 100).toFixed(2));
+
+  allMarkets.push({
+    marketType: 'SOG_TOTAL_OVER',
+    marketName: `Over ${sportsbookShotsTotal} Shots on Goal`,
+    sportsbookLine: `O ${sportsbookShotsTotal} SOG`,
+    sportsbookOdds: sbSOGOdds,
+    sportsbookDecimalOdds: decSOG,
+    modelProbability: probSOGOver,
+    sportsbookImpliedProb: americanToImpliedProb(sbSOGOdds),
+    edgePercent: evSOGOver,
+    pointOrGoalEdge: shotsEdge,
+    confidence: evSOGOver >= 7.5 ? 'HIGH' : evSOGOver >= 4.5 ? 'MEDIUM' : evSOGOver >= 1.5 ? 'LEAN' : 'AVOID',
+    starRating: evSOGOver >= 8.0 ? 5 : evSOGOver >= 5.5 ? 4 : evSOGOver >= 3.0 ? 3 : evSOGOver >= 1.0 ? 2 : 1,
+    recommended: evSOGOver >= 3.5,
+  });
+
+  allMarkets.push({
+    marketType: 'SOG_TOTAL_UNDER',
+    marketName: `Under ${sportsbookShotsTotal} Shots on Goal`,
+    sportsbookLine: `U ${sportsbookShotsTotal} SOG`,
+    sportsbookOdds: sbSOGOdds,
+    sportsbookDecimalOdds: decSOG,
+    modelProbability: probSOGUnder,
+    sportsbookImpliedProb: americanToImpliedProb(sbSOGOdds),
+    edgePercent: evSOGUnder,
+    pointOrGoalEdge: -shotsEdge,
+    confidence: evSOGUnder >= 7.5 ? 'HIGH' : evSOGUnder >= 4.5 ? 'MEDIUM' : evSOGUnder >= 1.5 ? 'LEAN' : 'AVOID',
+    starRating: evSOGUnder >= 8.0 ? 5 : evSOGUnder >= 5.5 ? 4 : evSOGUnder >= 3.0 ? 3 : evSOGUnder >= 1.0 ? 2 : 1,
+    recommended: evSOGUnder >= 3.5,
+  });
+
+  // Faceoffs Projections:
+  // Baseline ~58.4 faceoffs per game. Pace increases with shot volume & whistles
+  const projectedTotalFaceoffs = Number(
+    Math.max(50.0, Math.min(66.0, 58.4 + (projectedTotalShots - 61.2) * 0.12)).toFixed(1)
+  );
+
+  // Home center stick placement advantage adds +1.2% in faceoff win rate
+  const homeFOPower = homeProf.faceoffWinPct + 1.2;
+  const awayFOPower = awayProf.faceoffWinPct;
+  const projectedHomeFaceoffWinPct = Number(((homeFOPower / (homeFOPower + awayFOPower)) * 100).toFixed(1));
+  const projectedAwayFaceoffWinPct = Number((100 - projectedHomeFaceoffWinPct).toFixed(1));
+
+  const projectedHomeFaceoffsWon = Number(
+    (projectedTotalFaceoffs * (projectedHomeFaceoffWinPct / 100)).toFixed(1)
+  );
+  const projectedAwayFaceoffsWon = Number(
+    (projectedTotalFaceoffs * (projectedAwayFaceoffWinPct / 100)).toFixed(1)
+  );
+
   // Sort markets by Edge % descending
   allMarkets.sort((a, b) => b.edgePercent - a.edgePercent);
 
@@ -398,11 +479,11 @@ export function runNHLForecastingModel(params: NHLModelParameters) {
   // Key narrative context
   let narrative = '';
   if (Math.abs(goalEdge) >= 0.4) {
-    narrative = `Model projects ${modelProjectedTotal} total goals vs market line ${sbTotal} (${goalEdge > 0 ? '+' : ''}${goalEdge} goal discrepancy). Strongest value lies on ${highestEdgeMarket.marketName} (${highestEdgeMarket.edgePercent > 0 ? '+' : ''}${highestEdgeMarket.edgePercent}% EV).`;
+    narrative = `Model projects ${modelProjectedTotal} total goals vs market line ${sbTotal} (${goalEdge > 0 ? '+' : ''}${goalEdge} goal discrepancy). Strongest value lies on ${highestEdgeMarket.marketName} (${highestEdgeMarket.edgePercent > 0 ? '+' : ''}${highestEdgeMarket.edgePercent}% EV). SOG projected at ${projectedTotalShots} (${projectedHomeShots}-${projectedAwayShots}).`;
   } else if (highestEdgeMarket.edgePercent >= 5.0) {
-    narrative = `While total line is fairly priced near ${sbTotal}, Poisson simulation spots high mispricing on ${highestEdgeMarket.marketName} with a ${highestEdgeMarket.edgePercent}% Expected Value.`;
+    narrative = `While total line is fairly priced near ${sbTotal}, Poisson simulation spots high mispricing on ${highestEdgeMarket.marketName} with a ${highestEdgeMarket.edgePercent}% Expected Value. Faceoff control favors ${projectedHomeFaceoffWinPct >= 50 ? homeProf.abbreviation : awayProf.abbreviation} (${Math.max(projectedHomeFaceoffWinPct, projectedAwayFaceoffWinPct)}%).`;
   } else {
-    narrative = `Evenly matched goaltending and 5v5 ratings produce balanced expectations. ${highestEdgeMarket.marketName} holds the top marginal edge at ${highestEdgeMarket.edgePercent}% EV.`;
+    narrative = `Evenly matched goaltending and 5v5 ratings produce balanced expectations. ${highestEdgeMarket.marketName} holds the top marginal edge at ${highestEdgeMarket.edgePercent}% EV with ${projectedTotalShots} projected shots on goal.`;
   }
 
   return {
@@ -410,6 +491,16 @@ export function runNHLForecastingModel(params: NHLModelParameters) {
     modelProjectedAwayGoals: lambdaAway,
     modelProjectedTotal,
     goalEdge,
+    projectedHomeShots,
+    projectedAwayShots,
+    projectedTotalShots,
+    sportsbookShotsTotal,
+    shotsEdge,
+    projectedTotalFaceoffs,
+    projectedHomeFaceoffWinPct,
+    projectedAwayFaceoffWinPct,
+    projectedHomeFaceoffsWon,
+    projectedAwayFaceoffsWon,
     probOver5_5: Number(probOver5_5.toFixed(3)),
     probUnder5_5: Number(probUnder5_5.toFixed(3)),
     probOver6_0: Number(probOver6_0.toFixed(3)),
@@ -434,6 +525,7 @@ export function runNHLForecastingModel(params: NHLModelParameters) {
       goalieFactor: `Net Goalie GSAx/60: ${homeGoalie.name} (${homeGoalie.gsax60 >= 0 ? '+' : ''}${homeGoalie.gsax60}) vs ${awayGoalie.name} (${awayGoalie.gsax60 >= 0 ? '+' : ''}${awayGoalie.gsax60})`,
       specialTeamsFactor: `PP vs PK: ${homeProf.abbreviation} PP ${homeProf.powerPlayPct}% vs ${awayProf.penaltyKillPct}% PK | ${awayProf.abbreviation} PP ${awayProf.powerPlayPct}% vs ${homeProf.penaltyKillPct}% PK`,
       fatigueFactor: `Rest: ${homeProf.abbreviation} (${homeRest === 0 ? 'B2B 0d' : `${homeRest}d rest`}) vs ${awayProf.abbreviation} (${awayRest === 0 ? 'B2B 0d' : `${awayRest}d rest`})`,
+      sogAndFaceoffsFactor: `SOG: ${projectedHomeShots} - ${projectedAwayShots} (Tot: ${projectedTotalShots}) | Faceoffs: ${projectedHomeFaceoffWinPct}% vs ${projectedAwayFaceoffWinPct}% (~${projectedTotalFaceoffs} draws)`,
     },
   };
 }
