@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
             id: 'results',
             label: 'Model Correctness',
             icon: CheckCircle2,
-            badge: '2024–25 Season',
+            badge: '2026–27 Season',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },
@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
             id: 'results',
             label: 'Model Correctness',
             icon: CheckCircle2,
-            badge: '2024–25 Season',
+            badge: '2026–27 Season',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },

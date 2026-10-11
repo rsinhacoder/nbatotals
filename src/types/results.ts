@@ -21,6 +21,10 @@ export interface GradedModelPick {
   sportsbookOdds: string; // e.g. "-110", "+142", "-125"
   decimalOdds: number; // e.g. 1.91, 2.42
 
+  // Season & Explicit Pick Target Value
+  season?: '2026-27' | '2024-25';
+  modelPickValue?: string; // e.g. "UNDER 224.5 Pts", "OVER 5.5 Goals", "CAR -1.5 Puckline", "OVER 61.5 SOG"
+
   // Model Prediction at Game Time
   modelProjection: number; // Projected points, goals, or shots
   modelWinProb: number; // e.g. 0.584 (58.4%)
@@ -29,7 +33,9 @@ export interface GradedModelPick {
   confidence: 'HIGH' | 'MEDIUM' | 'LEAN';
   starRating: 1 | 2 | 3 | 4 | 5;
 
-  // Actual Game Outcome
+  // Actual Game Outcome & Current Value Achieved
+  currentValue?: string; // e.g. "212 Total Pts", "6 Total Goals", "64 Total SOG"
+  valueDifferential?: string; // e.g. "+12.5 pts buffer (Under won)", "-1.5 goals deficit"
   awayScore: number;
   homeScore: number;
   actualTotal: number;

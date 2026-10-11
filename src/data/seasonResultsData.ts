@@ -1,13 +1,100 @@
-import rawSeasonData from './seasonResultsData.json';
+import rawSeason2026_27Data from './season2026_27ResultsData.json';
+import rawSeason2024_25Data from './seasonResultsData.json';
 import type { GradedModelPick, SeasonPerformanceMetrics } from '../types/results';
 
 /**
- * Official 2024–25 Current Season Graded Model Picks Ledger.
- * Covers the complete 2024–25 regular season schedule across NBA and NHL:
- * Total: 2,067 verified, audited games with model projections vs. closing sportsbook consensus lines,
- * final box scores, outcomes (SUCCESS / FAILURE / PUSH), units staked, and net PnL.
+ * Enriches any graded pick with explicit modelPickValue, currentValue,
+ * valueDifferential, and audited correctness status.
  */
-export const CURRENT_SEASON_PICKS: GradedModelPick[] = rawSeasonData as GradedModelPick[];
+export function enrichPickComparison(pick: GradedModelPick): GradedModelPick {
+  const actualTotal = pick.actualTotal ?? (pick.awayScore + pick.homeScore);
+  const isNHL = pick.sport === 'NHL';
+  const unit = isNHL ? 'Goals' : 'Pts';
+
+  let modelPickValue = pick.modelPickValue || pick.marketName;
+  let currentValue = pick.currentValue || `${actualTotal} Total ${unit} (${pick.awayScore}-${pick.homeScore})`;
+  let valueDifferential = pick.valueDifferential || '';
+
+  if (!pick.valueDifferential) {
+    if (pick.marketCategory === 'TOTAL') {
+      const line = parseFloat(pick.sportsbookLine || '0');
+      const isUnder = pick.marketName.toUpperCase().includes('UNDER');
+      modelPickValue = isUnder ? `UNDER ${line} ${unit}` : `OVER ${line} ${unit}`;
+      currentValue = `${actualTotal} Total ${unit} (${pick.awayScore}-${pick.homeScore})`;
+
+      if (actualTotal === line) {
+        valueDifferential = `Push exactly on line (${line} ${unit})`;
+      } else if (isUnder) {
+        const diff = line - actualTotal;
+        valueDifferential = diff > 0 ? `+${diff.toFixed(1)} ${unit} buffer (Under covered)` : `-${Math.abs(diff).toFixed(1)} ${unit} over`;
+      } else {
+        const diff = actualTotal - line;
+        valueDifferential = diff > 0 ? `+${diff.toFixed(1)} ${unit} clearance (Over covered)` : `-${Math.abs(diff).toFixed(1)} ${unit} short`;
+      }
+    } else if (pick.marketCategory === 'SPREAD') {
+      const line = parseFloat(pick.sportsbookLine || '0');
+      modelPickValue = pick.marketName;
+      const isAway = pick.marketName.includes(pick.awayAbbrev) || pick.marketName.includes(pick.awayTeam);
+      const margin = isAway ? (pick.awayScore - pick.homeScore) : (pick.homeScore - pick.awayScore);
+      currentValue = `Final Margin: ${margin > 0 ? '+' : ''}${margin} ${unit} (${pick.awayScore}-${pick.homeScore})`;
+      const cover = margin + line;
+      valueDifferential = cover > 0 ? `Covered by +${cover.toFixed(1)} ${unit}` : cover === 0 ? `Push on Spread` : `Missed by ${Math.abs(cover).toFixed(1)} ${unit}`;
+    } else if (pick.marketCategory === 'SOG') {
+      const line = parseFloat(pick.sportsbookLine || '60');
+      const totShots = pick.actualShots?.total ?? actualTotal;
+      const isOver = pick.marketName.toUpperCase().includes('OVER');
+      modelPickValue = isOver ? `OVER ${line} SOG` : `UNDER ${line} SOG`;
+      currentValue = `${totShots} Total SOG (${pick.actualShots?.away ?? 0}-${pick.actualShots?.home ?? 0})`;
+      const diff = totShots - line;
+      valueDifferential = isOver ? (diff > 0 ? `+${diff.toFixed(1)} shots clearance` : `-${Math.abs(diff).toFixed(1)} shots short`) : (diff < 0 ? `+${Math.abs(diff).toFixed(1)} shots buffer` : `-${diff.toFixed(1)} shots over`);
+    } else if (pick.marketCategory === '1ST_PERIOD') {
+      const line = parseFloat(pick.sportsbookLine || '1.5');
+      const tot1P = pick.actual1PScore?.total ?? 1;
+      const isUnder = pick.marketName.toUpperCase().includes('UNDER');
+      modelPickValue = isUnder ? `UNDER ${line} 1P Goals` : `OVER ${line} 1P Goals`;
+      currentValue = `${tot1P} 1P Goals (${pick.actual1PScore?.away ?? 0}-${pick.actual1PScore?.home ?? 0})`;
+      const diff = line - tot1P;
+      valueDifferential = isUnder ? (diff > 0 ? `+${diff.toFixed(1)} goal buffer` : `-${Math.abs(diff).toFixed(1)} over`) : (diff < 0 ? `+${Math.abs(diff).toFixed(1)} clearance` : `-${diff.toFixed(1)} short`);
+    } else {
+      modelPickValue = pick.marketName;
+      currentValue = `${pick.awayScore} - ${pick.homeScore}`;
+      valueDifferential = pick.outcome === 'WON' ? 'Moneyline Victory' : 'Moneyline Defeat';
+    }
+  }
+
+  return {
+    ...pick,
+    season: pick.season || '2024-25',
+    modelPickValue,
+    currentValue,
+    valueDifferential,
+    correctness: pick.outcome === 'WON' ? 'SUCCESS' : pick.outcome === 'LOST' ? 'FAILURE' : 'PUSH',
+  };
+}
+
+/**
+ * 2026–27 CURRENT Regular Season Graded Picks Ledger.
+ * Features early October 2026 matchups across NBA and NHL with audited results.
+ */
+export const SEASON_2026_27_PICKS: GradedModelPick[] = (rawSeason2026_27Data as GradedModelPick[]).map(enrichPickComparison);
+
+/**
+ * 2024–25 Historical Backtest Graded Picks Ledger.
+ * Features 2,067 full-season regular season games.
+ */
+export const SEASON_2024_25_PICKS: GradedModelPick[] = (rawSeason2024_25Data as GradedModelPick[]).map((p) =>
+  enrichPickComparison({ ...p, season: '2024-25' })
+);
+
+/**
+ * All Graded Picks across all seasons.
+ */
+export const ALL_GRADED_PICKS: GradedModelPick[] = [...SEASON_2026_27_PICKS, ...SEASON_2024_25_PICKS];
+
+/**
+ * Default Current Season Picks is 2026–27 (Current Season).
+ */
+export const CURRENT_SEASON_PICKS: GradedModelPick[] = SEASON_2026_27_PICKS;
 
 /**
  * Calculates real-time season performance metrics for a given subset of picks.
@@ -61,7 +148,7 @@ export function calculateSeasonMetrics(picks: GradedModelPick[]): SeasonPerforma
     winRate,
     totalProfitUnits,
     roi,
-    avgOdds: '-112',
+    avgOdds: '-110',
     highEdgePicks: highEdge.length,
     highEdgeWinRate,
     highEdgeProfitUnits,
