@@ -58,3 +58,34 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 }
 
+/* Mobile App Safe Area Utilities for Android & iOS */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* Hide scrollbar for clean horizontal date pickers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* TheOver-inspired glowing card borders */
+.theover-card {
+  background: #090e1a;
+  border: 1px solid rgba(30, 41, 59, 0.7);
+  border-radius: 1rem;
+}
+.theover-card:hover {
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 20px -5px rgba(6, 182, 212, 0.15);
+}
+

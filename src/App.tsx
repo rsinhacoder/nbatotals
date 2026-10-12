@@ -16,6 +16,11 @@ import {
   AboutModal,
   ContactModal,
 } from './components/LegalModals';
+import { MobileAppContainer } from './components/mobile/MobileAppContainer';
+import { isNativePlatform } from './utils/capacitorApp';
+import { nbaRosterService } from './services/nbaRosterService';
+import { DEFAULT_OPENING_CONSENSUS_MARKETS } from './services/sportsbookOddsService';
+import type { PlayerPropsForecast } from './types/playerProps';
 
 import { INITIAL_NBA_GAMES, INITIAL_REFERENCE_TOTALS } from './data/mockGames';
 import { INITIAL_UPCOMING_MATCHES } from './data/upcomingGames';
@@ -192,6 +197,36 @@ export function App() {
 
   const [isSyncingResults, setIsSyncingResults] = useState(false);
   const [lastResultsSyncTime, setLastResultsSyncTime] = useState<Date>(new Date());
+
+  // Player Props Forecasts for mobile app & slate views
+  const [playerPropsForecasts, setPlayerPropsForecasts] = useState<PlayerPropsForecast[]>([]);
+
+  useEffect(() => {
+    nbaRosterService
+      .generateScheduleDrivenRosters('2026-10-12', DEFAULT_OPENING_CONSENSUS_MARKETS)
+      .then((res) => setPlayerPropsForecasts(res.allForecasts))
+      .catch(console.warn);
+  }, []);
+
+  // Mobile Android App View Mode (Auto-detects native Capacitor Android & mobile screens)
+  const [isMobileAppMode, setIsMobileAppMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && isNativePlatform()) return true;
+    try {
+      const saved = localStorage.getItem('nbatotals_mobile_mode');
+      if (saved !== null) return saved === 'true';
+    } catch {}
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  });
+
+  const toggleMobileAppMode = () => {
+    setIsMobileAppMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('nbatotals_mobile_mode', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Preloaded matchup for Matchup Analyzer
   const [analyzerPreload, setAnalyzerPreload] = useState<{
@@ -864,6 +899,69 @@ export function App() {
 
   const seasonLabel = dashboardMetrics.season || getCurrentSeasonLabel();
 
+  const handleTrackPropBet = (fc: PlayerPropsForecast) => {
+    handleAddNewCustomBet({
+      matchId: fc.gameId,
+      date: new Date().toISOString().slice(0, 10),
+      matchup: `${fc.playerName} (${fc.team} vs ${fc.opponent})`,
+      pickType: fc.recommendation.includes('OVER') ? 'OVER' : 'UNDER',
+      targetLine: fc.pointsLine ?? fc.modelProjectedPoints,
+      modelProjection: fc.modelProjectedPoints,
+      edge: fc.recommendationEdge,
+      units: 1.0,
+      odds: fc.overOdds || '-110',
+      status: 'PENDING',
+      sport: 'NBA',
+      notes: `Player prop forecast for ${fc.playerName}`,
+    });
+    addToast('Prop Tracked', `Added ${fc.playerName} ${fc.recommendation} to portfolio`, 'success');
+  };
+
+  // If in dedicated Mobile App Mode (or native Android Capacitor)
+  if (isMobileAppMode) {
+    return (
+      <>
+        <MobileAppContainer
+          upcomingMatches={upcomingMatches}
+          playerPropsForecasts={playerPropsForecasts}
+          trackedBets={trackedBets}
+          activeModel={activeModel}
+          onSelectModel={handleSelectModel}
+          onTrackBet={handleTrackMatchBet}
+          onTrackPropBet={handleTrackPropBet}
+          onRefreshSchedule={() => handleRefreshSchedule(true)}
+          isSyncingSchedule={isSyncingSchedule}
+          onOpenPrivacy={() => setIsPrivacyModalOpen(true)}
+          onOpenTerms={() => setIsTermsModalOpen(true)}
+          onOpenAbout={() => setIsAboutModalOpen(true)}
+          onOpenContact={() => setIsContactModalOpen(true)}
+          onToggleDesktopMode={!isNativePlatform() ? toggleMobileAppMode : undefined}
+        />
+
+        {/* Floating Toast Notification Container */}
+        <ToastContainer toasts={toasts} onDismiss={handleDismissToast} />
+
+        {/* Legal & Compliance Modals */}
+        <PrivacyPolicyModal
+          isOpen={isPrivacyModalOpen}
+          onClose={() => setIsPrivacyModalOpen(false)}
+        />
+        <TermsOfServiceModal
+          isOpen={isTermsModalOpen}
+          onClose={() => setIsTermsModalOpen(false)}
+        />
+        <AboutModal
+          isOpen={isAboutModalOpen}
+          onClose={() => setIsAboutModalOpen(false)}
+        />
+        <ContactModal
+          isOpen={isContactModalOpen}
+          onClose={() => setIsContactModalOpen(false)}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 dark:bg-[#080b12] text-slate-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-blue-600/15 selection:text-blue-900 dark:selection:bg-amber-500/30 dark:selection:text-amber-200 transition-colors duration-200">
       {/* Header & Navigation */}
@@ -885,6 +983,7 @@ export function App() {
         seasonLabel={seasonLabel}
         activeModel={activeModel}
         onSelectModel={handleSelectModel}
+        onToggleMobileAppMode={toggleMobileAppMode}
       />
 
       {/* Main Content Area */}

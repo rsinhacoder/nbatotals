@@ -13,6 +13,7 @@ import {
   Award,
   CheckCircle2,
   Users,
+  Smartphone,
 } from 'lucide-react';
 import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -35,6 +36,7 @@ interface HeaderProps {
   seasonLabel: string;
   activeModel: ModelConfig;
   onSelectModel: (config: ModelConfig) => void;
+  onToggleMobileAppMode?: () => void;
 }
 
 const QuantLogoMark: React.FC = () => (
@@ -102,6 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
   seasonLabel,
   activeModel,
   onSelectModel,
+  onToggleMobileAppMode,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
@@ -452,6 +455,18 @@ export const Header: React.FC<HeaderProps> = ({
             <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Sync Live</span>
           </button>
+
+          {/* Android Mobile App View Toggle */}
+          {onToggleMobileAppMode && (
+            <button
+              onClick={onToggleMobileAppMode}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-400 hover:text-white border border-cyan-500/40 hover:border-cyan-400 font-bold transition-all cursor-pointer text-xs sm:text-sm shrink-0 shadow-xs active:scale-95"
+              title="Switch to Mobile Android App View"
+            >
+              <Smartphone className="h-3.5 w-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">Android App</span>
+            </button>
+          )}
 
           {/* Theme Switcher */}
           <ThemeSwitcher />
