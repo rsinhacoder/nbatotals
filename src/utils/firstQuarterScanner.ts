@@ -84,32 +84,33 @@ export function calculatePostQ1Update(
   // Since 1 quarter is already locked in (deterministic), variance only applies to remaining minutes
   const remainingStdDev = Math.max(1.5, preGameForecast.modelStdDev * Math.sqrt(expectedRemainingMinutes / player.expectedMinutes));
 
-  const probs = evaluateMarketLineProbabilities(
-    preGameForecast.pointsLine,
-    updatedFinalPoints,
-    remainingStdDev
-  );
+  const targetLine = preGameForecast.pointsLine;
+  const probs = targetLine != null
+    ? evaluateMarketLineProbabilities(targetLine, updatedFinalPoints, remainingStdDev)
+    : { probOver: 0, probUnder: 0, probPush: 0 };
 
-  const probOverChange = Number(((probs.probOver - preGameForecast.modelProbOver) * 100).toFixed(1));
-  const probUnderChange = Number(((probs.probUnder - preGameForecast.modelProbUnder) * 100).toFixed(1));
+  const probOverChange = targetLine != null ? Number(((probs.probOver - preGameForecast.modelProbOver) * 100).toFixed(1)) : 0;
+  const probUnderChange = targetLine != null ? Number(((probs.probUnder - preGameForecast.modelProbUnder) * 100).toFixed(1)) : 0;
 
   // Updated Recommendation Post-Q1
-  const updatedPointsDiff = Number((updatedFinalPoints - preGameForecast.pointsLine).toFixed(1));
-  const updatedEdgeOver = Number(((probs.probOver - preGameForecast.noVigImpliedOver) * 100).toFixed(1));
-  const updatedEdgeUnder = Number(((probs.probUnder - preGameForecast.noVigImpliedUnder) * 100).toFixed(1));
+  const updatedPointsDiff = targetLine != null ? Number((updatedFinalPoints - targetLine).toFixed(1)) : 0;
+  const updatedEdgeOver = targetLine != null ? Number(((probs.probOver - preGameForecast.noVigImpliedOver) * 100).toFixed(1)) : 0;
+  const updatedEdgeUnder = targetLine != null ? Number(((probs.probUnder - preGameForecast.noVigImpliedUnder) * 100).toFixed(1)) : 0;
 
   let updatedRecommendation = preGameForecast.recommendation;
   let updatedEdge = preGameForecast.recommendationEdge;
 
-  if (updatedEdgeOver >= 4.0) {
-    updatedRecommendation = 'OVER EDGE';
-    updatedEdge = updatedEdgeOver;
-  } else if (updatedEdgeUnder >= 4.0) {
-    updatedRecommendation = 'UNDER EDGE';
-    updatedEdge = updatedEdgeUnder;
-  } else {
-    updatedRecommendation = 'NO EDGE';
-    updatedEdge = 0;
+  if (targetLine != null) {
+    if (updatedEdgeOver >= 4.0) {
+      updatedRecommendation = 'OVER EDGE';
+      updatedEdge = updatedEdgeOver;
+    } else if (updatedEdgeUnder >= 4.0) {
+      updatedRecommendation = 'UNDER EDGE';
+      updatedEdge = updatedEdgeUnder;
+    } else {
+      updatedRecommendation = 'NO EDGE';
+      updatedEdge = 0;
+    }
   }
 
   // Determine Scanner Tag

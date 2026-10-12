@@ -62,7 +62,12 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {forecast.team} vs {forecast.opponent} ({oppProfile.name}) • Line: <strong className="text-slate-900 dark:text-white">{forecast.pointsLine} pts</strong>
+                {forecast.team} vs {forecast.opponent} ({oppProfile.name}) • Line:{' '}
+                <strong className="text-slate-900 dark:text-white">
+                  {forecast.marketStatus === 'OFFERED' && forecast.pointsLine != null
+                    ? `${forecast.pointsLine} pts`
+                    : 'Off the Board (Not Offered)'}
+                </strong>
               </p>
             </div>
           </div>
@@ -83,27 +88,35 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                 {forecast.modelProjectedPoints} <span className="text-xs font-normal text-slate-400">pts</span>
               </div>
               <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                {forecast.pointsDifference > 0 ? `+${forecast.pointsDifference}` : forecast.pointsDifference} vs Line
+                {forecast.marketStatus === 'OFFERED' && forecast.pointsLine != null
+                  ? `${forecast.pointsDifference > 0 ? `+${forecast.pointsDifference}` : forecast.pointsDifference} vs Line`
+                  : '80% Interval: ' + forecast.confidenceInterval80[0] + ' - ' + forecast.confidenceInterval80[1]}
               </span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#121b2d] border border-slate-200/80 dark:border-slate-800/80">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Sportsbook Line</span>
               <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
-                {forecast.pointsLine}
+                {forecast.marketStatus === 'OFFERED' && forecast.pointsLine != null ? forecast.pointsLine : '—'}
               </div>
               <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                O: {formatOdds(forecast.overOdds, forecast.overDecimal)} | U: {formatOdds(forecast.underOdds, forecast.underDecimal)}
+                {forecast.marketStatus === 'OFFERED' && forecast.pointsLine != null
+                  ? `O: ${formatOdds(forecast.overOdds, forecast.overDecimal)} | U: ${formatOdds(forecast.underOdds, forecast.underDecimal)}`
+                  : 'Market Not Offered'}
               </span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#121b2d] border border-slate-200/80 dark:border-slate-800/80">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Win Prob & No-Vig</span>
               <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-                {(forecast.recommendation === 'OVER EDGE' ? forecast.modelProbOver : forecast.modelProbUnder * 100).toFixed(1)}%
+                {forecast.marketStatus === 'OFFERED'
+                  ? `${(forecast.recommendation === 'OVER EDGE' ? forecast.modelProbOver * 100 : forecast.modelProbUnder * 100).toFixed(1)}%`
+                  : '—'}
               </div>
               <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                Edge: +{forecast.recommendationEdge}% (EV +{forecast.recommendationEv}%)
+                {forecast.marketStatus === 'OFFERED'
+                  ? `Edge: +${forecast.recommendationEdge}% (EV +${forecast.recommendationEv}%)`
+                  : 'No Active Odds'}
               </span>
             </div>
 
@@ -195,16 +208,22 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                   width: `${Math.min(100, ((forecast.confidenceInterval80[1] - forecast.confidenceInterval80[0]) / 50) * 100)}%`,
                 }}
               />
-              {/* Target Line Marker */}
-              <div
-                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
-                style={{ left: `${(forecast.pointsLine / 50) * 100}%` }}
-                title={`Line: ${forecast.pointsLine}`}
-              />
+              {/* Target Line Marker (if offered) */}
+              {forecast.pointsLine != null && (
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
+                  style={{ left: `${Math.min(100, Math.max(0, (forecast.pointsLine / 50) * 100))}%` }}
+                  title={`Line: ${forecast.pointsLine}`}
+                />
+              )}
             </div>
             <div className="flex justify-between text-[10px] text-slate-400">
               <span>0 pts</span>
-              <span className="text-red-500 font-bold">Line: {forecast.pointsLine} pts</span>
+              {forecast.pointsLine != null ? (
+                <span className="text-red-500 font-bold">Line: {forecast.pointsLine} pts</span>
+              ) : (
+                <span className="text-slate-400 font-bold">Line: Off Board</span>
+              )}
               <span>50+ pts</span>
             </div>
           </div>
@@ -232,7 +251,8 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono">
                     {gameLogs.map((log) => {
-                      const covered = log.points > forecast.pointsLine;
+                      const hasLine = forecast.pointsLine != null;
+                      const covered = hasLine && log.points > (forecast.pointsLine as number);
                       return (
                         <tr key={log.gameId} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                           <td className="py-2 px-3 text-slate-500 dark:text-slate-400">{log.date}</td>
@@ -245,15 +265,19 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                           <td className="py-2 px-3">{log.fgm}/{log.fga}</td>
                           <td className="py-2 px-3">{log.threePm}/{log.threePa}</td>
                           <td className="py-2 px-3">
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                covered
-                                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                                  : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                              }`}
-                            >
-                              {covered ? 'OVER' : 'UNDER'}
-                            </span>
+                            {hasLine ? (
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  covered
+                                    ? 'bg-emerald-500/20 text-emerald-500'
+                                    : 'bg-amber-500/20 text-amber-500'
+                                }`}
+                              >
+                                {covered ? 'OVER' : 'UNDER'}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-[10px]">—</span>
+                            )}
                           </td>
                         </tr>
                       );

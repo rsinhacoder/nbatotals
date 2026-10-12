@@ -97,8 +97,9 @@ export function computePlayerPointsProjection(
 
   // 2. Projected Playing Time
   // Blended expected minutes with role stability shrinkage
-  const blendedMinutes = player.expectedMinutes * 0.50 + player.last10Minutes * 0.30 + player.last5Minutes * 0.20;
-  const projectedMinutes = Math.max(15, Math.min(42, blendedMinutes));
+  const blendedMinutes = player.expectedMinutes * 0.50 + (player.last10Minutes || player.expectedMinutes) * 0.30 + (player.last5Minutes || player.expectedMinutes) * 0.20;
+  const minFloor = player.role === 'Reserve' ? 4 : player.role === 'Bench' ? 8 : 15;
+  const projectedMinutes = Math.max(minFloor, Math.min(42, blendedMinutes));
 
   // 3. Opponent Matchup & Pace Adjustment
   const oppProfile = getTeamProfile(opponentAbbr);
@@ -127,12 +128,13 @@ export function computePlayerPointsProjection(
 
   // Raw Expected Points
   const rawExpected = projectedMinutes * blendedPpm * matchupMultiplier * restMultiplier * homeAwayMultiplier;
-  const expectedPoints = Number(Math.max(5, rawExpected).toFixed(1));
+  const expectedPointsFloor = player.role === 'Reserve' ? 1.0 : player.role === 'Bench' ? 2.5 : 5.0;
+  const expectedPoints = Number(Math.max(expectedPointsFloor, rawExpected).toFixed(1));
 
   // Empirical scoring standard deviation
-  // For high-usage stars, variance is typically ~22-26% of mean; for low-usage ~30%
-  const cv = player.usageRate >= 28 ? 0.23 : 0.28;
-  const scoringStdDev = Number(Math.max(2.5, expectedPoints * cv).toFixed(2));
+  // For high-usage stars, variance is typically ~22-26% of mean; for low-usage/bench ~30-35%
+  const cv = player.usageRate >= 28 ? 0.23 : player.role === 'Starter' ? 0.28 : 0.33;
+  const scoringStdDev = Number(Math.max(1.8, expectedPoints * cv).toFixed(2));
 
   return {
     baselinePpm: Number(blendedPpm.toFixed(3)),
@@ -182,6 +184,7 @@ export function evaluateMarketLineProbabilities(
 
 /**
  * Core forecast generation: runs the model against a specific market.
+ * Seamlessly supports both active sportsbook markets and bench players without posted lines.
  */
 export function generatePlayerPropForecast(
   market: PlayerPropsMarket,
@@ -189,6 +192,71 @@ export function generatePlayerPropForecast(
   isHome: boolean = true
 ): PlayerPropsForecast {
   const proj = computePlayerPointsProjection(player, market.opponent, isHome);
+  const oppProfile = getTeamProfile(market.opponent);
+  const role = player.role || (player.isStarter ? 'Starter' : 'Bench');
+  const marketStatus = market.marketStatus || (market.line != null ? 'OFFERED' : 'NOT_OFFERED');
+
+  // Handle case where market is NOT OFFERED by sportsbook
+  if (marketStatus === 'NOT_OFFERED' || market.line == null) {
+    const lower80 = Number(Math.max(0, proj.expectedPoints - 1.282 * proj.scoringStdDev).toFixed(1));
+    const upper80 = Number((proj.expectedPoints + 1.282 * proj.scoringStdDev).toFixed(1));
+    const narrative = `No sportsbook points line currently offered for ${player.name} (${role}). Model projects ${proj.expectedPoints} regulation pts across ${proj.projectedMinutes} projected minutes (${proj.baselinePpm} PPM) vs ${oppProfile.name}.`;
+
+    return {
+      marketId: market.marketId,
+      gameId: market.gameId,
+      playerId: player.id,
+      playerName: player.name,
+      team: player.team,
+      teamId: player.teamId || market.teamId,
+      opponent: market.opponent,
+      gameStartTime: market.gameStartTime,
+      marketStatus: 'NOT_OFFERED',
+      role,
+      isStarter: player.isStarter,
+      pointsLine: null,
+      overOdds: '—',
+      underOdds: '—',
+      overDecimal: 0,
+      underDecimal: 0,
+      headshotUrl: player.headshotUrl,
+      marketImpliedOver: 0,
+      marketImpliedUnder: 0,
+      noVigImpliedOver: 0,
+      noVigImpliedUnder: 0,
+      overround: 0,
+      modelProjectedPoints: proj.expectedPoints,
+      modelStdDev: proj.scoringStdDev,
+      modelProbOver: 0,
+      modelProbUnder: 0,
+      modelProbPush: 0,
+      pointsDifference: 0,
+      probabilityEdgeOver: 0,
+      probabilityEdgeUnder: 0,
+      evOver: 0,
+      evUnder: 0,
+      recommendation: 'OFF MARKET',
+      recommendationEdge: 0,
+      recommendationEv: 0,
+      confidenceScore: player.isStarter ? 65 : 55,
+      starRating: 1,
+      dataFreshness: 'LIVE',
+      dataQuality: 'VERIFIED',
+      expectedQ1Points: player.q1Ppg,
+      expectedQ1Minutes: player.q1Minutes,
+      confidenceInterval80: [lower80, upper80],
+      keyNarrative: narrative,
+      factors: {
+        minutesFactor: `${proj.projectedMinutes} expected minutes (${role} rotation)`,
+        recencyFactor: `PPM: ${proj.baselinePpm} (Season: ${player.seasonPpg} PPG)`,
+        matchupFactor: `Opponent: ${oppProfile.name} (Def Rtg: ${oppProfile.defensiveRating}, Pace: ${oppProfile.paceRating})`,
+        restFactor: `Rest: ${player.restDays ?? 1} day(s)`,
+        q1Baseline: `Q1 Avg: ${player.q1Ppg} pts in ${player.q1Minutes} mins`,
+      },
+    };
+  }
+
+  // Active Market Offered
   const probs = evaluateMarketLineProbabilities(market.line, proj.expectedPoints, proj.scoringStdDev);
 
   const { noVigOver, noVigUnder, overround } = calculateNoVigProbabilities(
@@ -199,8 +267,8 @@ export function generatePlayerPropForecast(
   const marketImpliedOver = oddsToImpliedProbability(market.overOdds);
   const marketImpliedUnder = oddsToImpliedProbability(market.underOdds);
 
-  const overDec = market.overDecimalOdds;
-  const underDec = market.underDecimalOdds;
+  const overDec = market.overDecimalOdds || 1.87;
+  const underDec = market.underDecimalOdds || 1.952;
 
   // Expected Value calculation:
   // EV = (P_win * DecOdds + P_push * 1.0 - 1.0) * 100%
@@ -235,7 +303,7 @@ export function generatePlayerPropForecast(
   // Model Confidence Score (0 - 100)
   // Grounded in sample size, playing time stability, and magnitude of edge
   let confidenceScore = 60;
-  if (player.last10Minutes >= 32) confidenceScore += 12; // Stable rotation
+  if ((player.last10Minutes || player.expectedMinutes) >= 32) confidenceScore += 12; // Stable rotation
   if (player.injuryStatus === 'ACTIVE') confidenceScore += 8;
   if (Math.abs(pointsDiff) >= 3.0) confidenceScore += 10;
   if (Math.abs(recEdge) >= 7.0) confidenceScore += 10;
@@ -250,7 +318,6 @@ export function generatePlayerPropForecast(
   const upper80 = Number((proj.expectedPoints + 1.282 * proj.scoringStdDev).toFixed(1));
 
   // Explanatory Factor Summary
-  const oppProfile = getTeamProfile(market.opponent);
   let narrative = '';
   if (recommendation === 'OVER EDGE') {
     narrative = `Model projects ${proj.expectedPoints} pts vs line ${market.line} (+${pointsDiff} pts discrepancy). Supported by ${proj.projectedMinutes} projected minutes, favorable matchup vs ${oppProfile.name} (Def Rtg ${oppProfile.defensiveRating}), and +${recEv}% EV.`;
@@ -266,13 +333,18 @@ export function generatePlayerPropForecast(
     playerId: player.id,
     playerName: player.name,
     team: player.team,
+    teamId: player.teamId || market.teamId,
     opponent: market.opponent,
     gameStartTime: market.gameStartTime,
+    marketStatus: 'OFFERED',
+    role,
+    isStarter: player.isStarter,
     pointsLine: market.line,
     overOdds: market.overOdds,
     underOdds: market.underOdds,
     overDecimal: overDec,
     underDecimal: underDec,
+    headshotUrl: player.headshotUrl,
     marketImpliedOver,
     marketImpliedUnder,
     noVigImpliedOver: noVigOver,
@@ -300,8 +372,8 @@ export function generatePlayerPropForecast(
     confidenceInterval80: [lower80, upper80],
     keyNarrative: narrative,
     factors: {
-      minutesFactor: `${proj.projectedMinutes} expected minutes (Season: ${player.seasonMinutes}m, L5: ${player.last5Minutes}m)`,
-      recencyFactor: `PPM: ${proj.baselinePpm} (Season: ${player.seasonPpg} PPG, L5: ${player.last5Ppg} PPG)`,
+      minutesFactor: `${proj.projectedMinutes} expected minutes (Season: ${player.seasonMinutes}m, L5: ${player.last5Minutes || player.seasonMinutes}m)`,
+      recencyFactor: `PPM: ${proj.baselinePpm} (Season: ${player.seasonPpg} PPG, L5: ${player.last5Ppg || player.seasonPpg} PPG)`,
       matchupFactor: `Opponent: ${oppProfile.name} (Def Rtg: ${oppProfile.defensiveRating}, Pace: ${oppProfile.paceRating})`,
       restFactor: `Rest: ${player.restDays ?? 1} day(s) (${proj.restMultiplier === 1.0 ? 'Standard' : 'Rest adjustment applied'})`,
       q1Baseline: `Q1 Avg: ${player.q1Ppg} pts in ${player.q1Minutes} mins`,

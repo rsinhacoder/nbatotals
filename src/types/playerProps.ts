@@ -1,8 +1,12 @@
 export type OddsFormat = 'AMERICAN' | 'DECIMAL';
 
-export type PropRecommendation = 'OVER EDGE' | 'UNDER EDGE' | 'NO EDGE';
+export type PropRecommendation = 'OVER EDGE' | 'UNDER EDGE' | 'NO EDGE' | 'OFF MARKET';
 
-export type InjuryStatus = 'ACTIVE' | 'DAY_TO_DAY' | 'OUT' | 'QUESTIONABLE' | 'PROBABLE';
+export type InjuryStatus = 'ACTIVE' | 'DAY_TO_DAY' | 'OUT' | 'QUESTIONABLE' | 'DOUBTFUL' | 'PROBABLE';
+
+export type MarketStatus = 'OFFERED' | 'NOT_OFFERED' | 'SUSPENDED' | 'UNAVAILABLE';
+
+export type PlayerRole = 'Starter' | 'Bench' | 'Reserve';
 
 export type GamePeriodStatus =
   | 'SCHEDULED'
@@ -19,9 +23,11 @@ export interface NBAPlayerProfile {
   id: string; // ESPN or NBA ID
   name: string;
   team: string; // Abbreviation e.g. 'DAL', 'BOS'
+  teamId?: string; // ESPN team ID e.g. '24'
   teamName: string; // Full name e.g. 'Dallas Mavericks'
   position: string; // 'PG', 'SG', 'SF', 'PF', 'C'
   jersey: string;
+  role?: PlayerRole;
   isStarter: boolean;
   expectedMinutes: number;
   seasonPpg: number;
@@ -42,6 +48,7 @@ export interface NBAPlayerProfile {
   homeSplitPpg?: number;
   awaySplitPpg?: number;
   restDays?: number;
+  headshotUrl?: string;
 }
 
 export interface PlayerPropsMarket {
@@ -50,13 +57,16 @@ export interface PlayerPropsMarket {
   playerId: string;
   playerName: string;
   team: string;
+  teamId?: string;
   opponent: string;
   gameStartTime: string;
-  line: number; // e.g. 24.5 or 25.0
-  overOdds: string; // e.g. "-115"
-  underOdds: string; // e.g. "-105"
-  overDecimalOdds: number; // e.g. 1.870
-  underDecimalOdds: number; // e.g. 1.952
+  marketStatus: MarketStatus;
+  role?: PlayerRole;
+  line: number | null; // e.g. 24.5 or null when not offered
+  overOdds: string; // e.g. "-115" or "—"
+  underOdds: string; // e.g. "-105" or "—"
+  overDecimalOdds: number; // e.g. 1.870 or 0
+  underDecimalOdds: number; // e.g. 1.952 or 0
   sportsbook: string; // 'DraftKings' | 'FanDuel' | 'The Odds API' | 'Consensus'
   timestamp: string;
   lastUpdated: string;
@@ -76,13 +86,18 @@ export interface PlayerPropsForecast {
   playerId: string;
   playerName: string;
   team: string;
+  teamId?: string;
   opponent: string;
   gameStartTime: string;
-  pointsLine: number;
+  marketStatus: MarketStatus;
+  role: PlayerRole;
+  isStarter: boolean;
+  pointsLine: number | null;
   overOdds: string;
   underOdds: string;
   overDecimal: number;
   underDecimal: number;
+  headshotUrl?: string;
   
   // Market Implied (No-Vig)
   marketImpliedOver: number; // Raw implied (includes vig)
@@ -99,7 +114,7 @@ export interface PlayerPropsForecast {
   modelProbPush: number; // Probability points === line (for integer lines)
   
   // Edges
-  pointsDifference: number; // modelProjectedPoints - pointsLine
+  pointsDifference: number; // modelProjectedPoints - pointsLine (0 if unoffered)
   probabilityEdgeOver: number; // (modelProbOver - noVigImpliedOver) * 100
   probabilityEdgeUnder: number; // (modelProbUnder - noVigImpliedUnder) * 100
   evOver: number; // (modelProbOver * overDecimal - 1) * 100
@@ -130,6 +145,49 @@ export interface PlayerPropsForecast {
     restFactor: string;
     q1Baseline: string;
   };
+}
+
+export interface RosterCoverageMetrics {
+  scheduledGames: number;
+  processedGames: number;
+  totalTeams: number;
+  totalRosterPlayers: number;
+  startersCount: number;
+  benchCount: number;
+  playersWithMarkets: number;
+  playersWithoutMarkets: number;
+  validProjections: number;
+  lastSyncTime: string;
+}
+
+export interface ScheduledGameWithRosters {
+  id: string; // canonical game ID
+  date: string; // YYYY-MM-DD
+  time: string; // "7:30 PM ET"
+  status: string; // "Scheduled" | "Live" | "Final"
+  venue?: string;
+  awayTeam: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo?: string;
+    record?: string;
+    starters: PlayerPropsForecast[];
+    bench: PlayerPropsForecast[];
+    allPlayers: PlayerPropsForecast[];
+  };
+  homeTeam: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo?: string;
+    record?: string;
+    starters: PlayerPropsForecast[];
+    bench: PlayerPropsForecast[];
+    allPlayers: PlayerPropsForecast[];
+  };
+  totalPlayers: number;
+  marketsAvailableCount: number;
 }
 
 export interface FirstQuarterPlayerStats {
@@ -165,7 +223,7 @@ export interface FirstQuarterPlayerStats {
   // Updated Projections Post-Q1
   expectedRemainingMinutes: number;
   updatedProjectedFinalPoints: number;
-  currentPointsLine: number;
+  currentPointsLine: number | null;
   updatedProbOver: number;
   updatedProbUnder: number;
   probOverChangeSinceTip: number; // updatedProbOver - preGameProbOver

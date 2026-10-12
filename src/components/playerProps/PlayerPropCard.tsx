@@ -26,6 +26,7 @@ export const PlayerPropCard: React.FC<PlayerPropCardProps> = ({
   const player = getPlayerProfile(forecast.playerId);
   const isOverEdge = forecast.recommendation === 'OVER EDGE';
   const isUnderEdge = forecast.recommendation === 'UNDER EDGE';
+  const isOffered = forecast.marketStatus === 'OFFERED' && forecast.pointsLine != null;
 
   const formatOdds = (american: string, decimal: number) => {
     return oddsFormat === 'AMERICAN' ? american : decimal.toFixed(3);
@@ -43,8 +44,19 @@ export const PlayerPropCard: React.FC<PlayerPropCardProps> = ({
             {forecast.team}
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <h4 className="font-black text-slate-900 dark:text-white text-sm">{forecast.playerName}</h4>
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase tracking-wider ${
+                  forecast.role === 'Starter'
+                    ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                    : forecast.role === 'Bench'
+                    ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                    : 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-500/20'
+                }`}
+              >
+                {forecast.role}
+              </span>
               {player?.injuryStatus && player.injuryStatus !== 'ACTIVE' && (
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500">
                   {player.injuryStatus}
@@ -60,16 +72,18 @@ export const PlayerPropCard: React.FC<PlayerPropCardProps> = ({
         {/* Signal Badge */}
         <span
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider shrink-0 ${
-            isOverEdge
+            isOffered && isOverEdge
               ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
-              : isUnderEdge
+              : isOffered && isUnderEdge
               ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30'
-              : 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border border-slate-500/30'
+              : isOffered
+              ? 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border border-slate-500/30'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
           }`}
         >
-          {isOverEdge && <TrendingUp className="w-3 h-3" />}
-          {isUnderEdge && <TrendingDown className="w-3 h-3" />}
-          {forecast.recommendation}
+          {isOffered && isOverEdge && <TrendingUp className="w-3 h-3" />}
+          {isOffered && isUnderEdge && <TrendingDown className="w-3 h-3" />}
+          {isOffered ? forecast.recommendation : 'OFF MARKET'}
         </span>
       </div>
 
@@ -77,10 +91,18 @@ export const PlayerPropCard: React.FC<PlayerPropCardProps> = ({
       <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-[#121b2d] border border-slate-200/60 dark:border-slate-800/60 text-center">
         <div>
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Line</span>
-          <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
-            {forecast.pointsLine}
-          </span>
-          <span className="text-[10px] text-slate-400 block">pts</span>
+          {isOffered ? (
+            <>
+              <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                {forecast.pointsLine}
+              </span>
+              <span className="text-[10px] text-slate-400 block">pts</span>
+            </>
+          ) : (
+            <span className="font-mono text-xs text-slate-400 block pt-1">
+              Off Board
+            </span>
+          )}
         </div>
 
         <div>
@@ -89,17 +111,17 @@ export const PlayerPropCard: React.FC<PlayerPropCardProps> = ({
             {forecast.modelProjectedPoints}
           </span>
           <span className="text-[10px] text-slate-400 block font-mono">
-            {forecast.pointsDifference > 0 ? `+${forecast.pointsDifference}` : forecast.pointsDifference} Δ
+            {isOffered ? (forecast.pointsDifference > 0 ? `+${forecast.pointsDifference} Δ` : `${forecast.pointsDifference} Δ`) : 'Expected'}
           </span>
         </div>
 
         <div>
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Edge (EV%)</span>
           <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
-            {forecast.recommendationEdge > 0 ? `+${forecast.recommendationEdge}%` : '—'}
+            {isOffered && forecast.recommendationEdge > 0 ? `+${forecast.recommendationEdge}%` : '—'}
           </span>
           <span className="text-[10px] text-slate-400 block font-mono">
-            {forecast.recommendationEv > 0 ? `+${forecast.recommendationEv}%` : '—'}
+            {isOffered && forecast.recommendationEv > 0 ? `+${forecast.recommendationEv}%` : '—'}
           </span>
         </div>
       </div>
@@ -109,7 +131,7 @@ export const PlayerPropCard: React.FC<PlayerPropCardProps> = ({
         <div>
           <span>Odds: </span>
           <span className="text-slate-600 dark:text-slate-300 font-mono">
-            O {formatOdds(forecast.overOdds, forecast.overDecimal)} / U {formatOdds(forecast.underOdds, forecast.underDecimal)}
+            {isOffered ? `O ${formatOdds(forecast.overOdds, forecast.overDecimal)} / U ${formatOdds(forecast.underOdds, forecast.underDecimal)}` : 'Market Not Offered'}
           </span>
         </div>
 

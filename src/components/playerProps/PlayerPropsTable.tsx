@@ -144,6 +144,7 @@ export const PlayerPropsTable: React.FC<PlayerPropsTableProps> = ({
             const player = getPlayerProfile(f.playerId);
             const isOverEdge = f.recommendation === 'OVER EDGE';
             const isUnderEdge = f.recommendation === 'UNDER EDGE';
+            const isOffered = f.marketStatus === 'OFFERED' && f.pointsLine != null;
 
             return (
               <tr
@@ -158,8 +159,22 @@ export const PlayerPropsTable: React.FC<PlayerPropsTableProps> = ({
                       {f.team}
                     </div>
                     <div>
-                      <div className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                      <div className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-1.5 flex-wrap">
                         {f.playerName}
+                        
+                        {/* Role Badge */}
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase tracking-wider ${
+                            f.role === 'Starter'
+                              ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                              : f.role === 'Bench'
+                              ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                              : 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-500/20'
+                          }`}
+                        >
+                          {f.role}
+                        </span>
+
                         {player?.injuryStatus && player.injuryStatus !== 'ACTIVE' && (
                           <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500">
                             {player.injuryStatus}
@@ -175,21 +190,31 @@ export const PlayerPropsTable: React.FC<PlayerPropsTableProps> = ({
 
                 {/* Points Line */}
                 <td className="py-3 px-3 text-center">
-                  <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-black text-slate-900 dark:text-white text-sm">
-                    {f.pointsLine}
-                  </span>
+                  {isOffered ? (
+                    <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-black text-slate-900 dark:text-white text-sm">
+                      {f.pointsLine}
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400">
+                      Not Offered
+                    </span>
+                  )}
                 </td>
 
                 {/* Over / Under Odds */}
                 <td className="py-3 px-3 text-center">
-                  <div className="flex items-center justify-center gap-1 text-[11px]">
-                    <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                      O: {formatOdds(f.overOdds, f.overDecimal)}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                      U: {formatOdds(f.underOdds, f.underDecimal)}
-                    </span>
-                  </div>
+                  {isOffered ? (
+                    <div className="flex items-center justify-center gap-1 text-[11px]">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        O: {formatOdds(f.overOdds, f.overDecimal)}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        U: {formatOdds(f.underOdds, f.underDecimal)}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400 text-[11px] font-sans">Off Board</span>
+                  )}
                 </td>
 
                 {/* Model Projection */}
@@ -199,33 +224,43 @@ export const PlayerPropsTable: React.FC<PlayerPropsTableProps> = ({
 
                 {/* Points Difference */}
                 <td className="py-3 px-3 text-center font-bold">
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-xs ${
-                      f.pointsDifference > 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : f.pointsDifference < 0
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-slate-400'
-                    }`}
-                  >
-                    {f.pointsDifference > 0 ? `+${f.pointsDifference}` : f.pointsDifference}
-                  </span>
+                  {isOffered ? (
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-xs ${
+                        f.pointsDifference > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : f.pointsDifference < 0
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      {f.pointsDifference > 0 ? `+${f.pointsDifference}` : f.pointsDifference}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 text-xs">—</span>
+                  )}
                 </td>
 
                 {/* Model Probabilities */}
                 <td className="py-3 px-3 text-center text-[11px]">
-                  <span className="text-slate-900 dark:text-white font-bold">
-                    {(f.modelProbOver * 100).toFixed(1)}%
-                  </span>
-                  <span className="text-slate-400"> / </span>
-                  <span className="text-slate-900 dark:text-white font-bold">
-                    {(f.modelProbUnder * 100).toFixed(1)}%
-                  </span>
+                  {isOffered ? (
+                    <>
+                      <span className="text-slate-900 dark:text-white font-bold">
+                        {(f.modelProbOver * 100).toFixed(1)}%
+                      </span>
+                      <span className="text-slate-400"> / </span>
+                      <span className="text-slate-900 dark:text-white font-bold">
+                        {(f.modelProbUnder * 100).toFixed(1)}%
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-slate-400 text-xs">—</span>
+                  )}
                 </td>
 
                 {/* Probability Edge */}
                 <td className="py-3 px-3 text-center font-bold">
-                  {f.recommendationEdge > 0 ? (
+                  {isOffered && f.recommendationEdge > 0 ? (
                     <span className="text-emerald-600 dark:text-emerald-400">
                       +{f.recommendationEdge}%
                     </span>
@@ -236,7 +271,7 @@ export const PlayerPropsTable: React.FC<PlayerPropsTableProps> = ({
 
                 {/* EV% */}
                 <td className="py-3 px-3 text-center font-black">
-                  {f.recommendationEv > 0 ? (
+                  {isOffered && f.recommendationEv > 0 ? (
                     <span className="text-emerald-600 dark:text-emerald-400">
                       +{f.recommendationEv}%
                     </span>
@@ -254,21 +289,27 @@ export const PlayerPropsTable: React.FC<PlayerPropsTableProps> = ({
                 {/* Recommendation Pill & Quick Action */}
                 <td className="py-3 px-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                        isOverEdge
-                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
-                          : isUnderEdge
-                          ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30'
-                          : 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border border-slate-500/30'
-                      }`}
-                    >
-                      {isOverEdge && <TrendingUp className="w-3 h-3" />}
-                      {isUnderEdge && <TrendingDown className="w-3 h-3" />}
-                      {f.recommendation}
-                    </span>
+                    {isOffered ? (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                          isOverEdge
+                            ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
+                            : isUnderEdge
+                            ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30'
+                            : 'bg-slate-500/20 text-slate-500 dark:text-slate-400 border border-slate-500/30'
+                        }`}
+                      >
+                        {isOverEdge && <TrendingUp className="w-3 h-3" />}
+                        {isUnderEdge && <TrendingDown className="w-3 h-3" />}
+                        {f.recommendation}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700">
+                        OFF MARKET
+                      </span>
+                    )}
 
-                    {onTrackProp && f.recommendation !== 'NO EDGE' && (
+                    {onTrackProp && isOffered && f.recommendation !== 'NO EDGE' && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
