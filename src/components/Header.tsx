@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Award,
   CheckCircle2,
+  Users,
 } from 'lucide-react';
 import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -206,6 +207,14 @@ export const Header: React.FC<HeaderProps> = ({
             badge: upcomingCount > 0 ? String(upcomingCount) : undefined,
             badgeColor:
               'bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+          },
+          {
+            id: 'player-props',
+            label: 'Player Props',
+            icon: Users,
+            badge: 'PROPS',
+            badgeColor:
+              'bg-purple-50 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
           },
           {
             id: 'results',

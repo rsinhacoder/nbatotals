@@ -6,6 +6,7 @@ import { BetTrackerTab } from './components/BetTrackerTab';
 import { TrackRecordTab } from './components/TrackRecordTab';
 import { QuantAcademyTab } from './components/QuantAcademyTab';
 import { ModelResultsTab } from './components/ModelResultsTab';
+import { PlayerPropsPage } from './components/playerProps/PlayerPropsPage';
 import { SyncModal } from './components/SyncModal';
 import { ToastContainer, type ToastMessage } from './components/Toast';
 import { AdBanner } from './components/AdBanner';
@@ -900,6 +901,15 @@ export function App() {
             onRefreshSchedule={() => handleRefreshSchedule(true)}
             isSyncingSchedule={isSyncingSchedule}
             lastSyncTime={lastScheduleSyncTime}
+          />
+        )}
+
+        {/* NBA Tab: Player Props Forecasting & Early Edge Scanner */}
+        {activeTab === 'player-props' && (
+          <PlayerPropsPage
+            upcomingMatches={upcomingMatches}
+            onTrackBet={handleAddNewCustomBet}
+            onOpenSync={() => setIsSyncModalOpen(true)}
           />
         )}
 
