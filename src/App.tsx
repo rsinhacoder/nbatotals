@@ -66,7 +66,7 @@ const STORAGE_KEY_BETS = 'nba_quant_bets_v2';
 const STORAGE_KEY_SPORT = 'quant_selected_sport_v1';
 const STORAGE_KEY_NHL_UPCOMING = 'nhl_quant_upcoming_v1';
 const STORAGE_KEY_KHL_UPCOMING = 'khl_quant_upcoming_v1';
-const STORAGE_KEY_2026_PICKS = 'nba_quant_graded_picks_2026_27_v4';
+const STORAGE_KEY_2026_PICKS = 'nba_quant_graded_picks_2026_27_v5';
 
 export function App() {
   // Navigation: 5 core human-centered tabs
@@ -151,25 +151,30 @@ export function App() {
     try {
       const saved =
         localStorage.getItem(STORAGE_KEY_2026_PICKS) ||
+        localStorage.getItem('nba_quant_graded_picks_2026_27_v4') ||
         localStorage.getItem('nba_quant_graded_picks_2026_27_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Build set of existing game identifiers (id and date_sport_away_home)
-          const savedIds = new Set(parsed.map((p: any) => p.id));
-          const savedMatchupKeys = new Set(
-            parsed.map((p: any) =>
-              `${p.date}_${p.sport}_${(p.awayAbbrev || '').toUpperCase()}_${(p.homeAbbrev || '').toUpperCase()}`
-            )
+          // Authoritative seed map: verified seed always overrides stale cached versions for known games
+          const seedMap = new Map(SEASON_2026_27_PICKS.map((p) => [p.id, p]));
+          const seedMatchupMap = new Map(
+            SEASON_2026_27_PICKS.map((p) => [
+              `${p.date}_${p.sport}_${(p.awayAbbrev || '').toUpperCase()}_${(p.homeAbbrev || '').toUpperCase()}`,
+              p,
+            ])
           );
 
-          // Include any verified seed picks (like yesterday's Oct 11 games) that are missing from localStorage
-          const missingFromSeed = SEASON_2026_27_PICKS.filter((p) => {
-            const key = `${p.date}_${p.sport}_${(p.awayAbbrev || '').toUpperCase()}_${(p.homeAbbrev || '').toUpperCase()}`;
-            return !savedIds.has(p.id) && !savedMatchupKeys.has(key);
+          // For any parsed item, if seed has an updated authoritative definition (e.g. Seattle, Vancouver), use seed!
+          const merged = parsed.map((item: any) => {
+            const key = `${item.date}_${item.sport}_${(item.awayAbbrev || '').toUpperCase()}_${(item.homeAbbrev || '').toUpperCase()}`;
+            return seedMap.get(item.id) || seedMatchupMap.get(key) || item;
           });
 
-          const combined = [...missingFromSeed, ...parsed].sort((a, b) => {
+          // Also include any seed items not yet in parsed
+          const existingIds = new Set(merged.map((p: any) => p.id));
+          const missing = SEASON_2026_27_PICKS.filter((p) => !existingIds.has(p.id));
+          const combined = [...missing, ...merged].sort((a, b) => {
             const dateCompare = b.date.localeCompare(a.date);
             if (dateCompare !== 0) return dateCompare;
             return (b.id || '').localeCompare(a.id || '');

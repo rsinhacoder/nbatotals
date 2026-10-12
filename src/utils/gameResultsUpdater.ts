@@ -5,6 +5,7 @@ import { DEFAULT_MODEL } from './modelConstants';
 import { getTeamProfile } from '../data/teamProfiles';
 import { getNHLTeamProfile } from '../data/nhlTeamProfiles';
 import { runNHLForecastingModel } from './nhlModelEngine';
+import { getCuratedUpcomingNHLMatches } from './nhlEspnApi';
 import { enrichPickComparison } from '../data/seasonResultsData';
 import type { TrackedBet } from '../types/nba';
 
@@ -236,40 +237,125 @@ export function gradeCompletedNHLGame(event: any): GradedModelPick | null {
       sportsbookTotal,
     });
 
-    const isUnder = forecast.goalEdge <= 0;
-    const marketName = isUnder ? `UNDER ${sportsbookTotal} Goals` : `OVER ${sportsbookTotal} Goals`;
-    const modelPickValue = marketName;
-    const oddsStr = '-110';
+    // Check if game was scheduled on our curated Picks Board
+    const curatedMatches = getCuratedUpcomingNHLMatches();
+    const matchedCurated = curatedMatches.find(
+      (m) =>
+        (m.awayAbbrev === awayAbbrev || m.awayTeam.toLowerCase() === awayProf.name.toLowerCase()) &&
+        (m.homeAbbrev === homeAbbrev || m.homeTeam.toLowerCase() === homeProf.name.toLowerCase())
+    );
 
+    let marketCategory: 'TOTAL' | 'SPREAD' | 'MONEYLINE' | 'SOG' | '1ST_PERIOD' = 'TOTAL';
+    let marketName = '';
+    let modelPickValue = '';
+    let sportsbookLine = String(sportsbookTotal);
+    let oddsStr = '-110';
     let outcome: PickOutcome = 'WON';
     let valueDifferential = '';
+    let edgePercent = 7.5;
+    const modelProjection = forecast.modelProjectedTotal;
 
-    if (actualTotal === sportsbookTotal) {
-      outcome = 'PUSH';
-      valueDifferential = `Push exactly on line (${sportsbookTotal} Goals)`;
-    } else if (isUnder) {
-      if (actualTotal < sportsbookTotal) {
-        outcome = 'WON';
-        const diff = (sportsbookTotal - actualTotal).toFixed(1);
-        valueDifferential = `+${diff} Goals buffer (Under covered)`;
-      } else {
-        outcome = 'LOST';
-        const diff = (actualTotal - sportsbookTotal).toFixed(1);
-        valueDifferential = `-${diff} Goals over (Under missed)`;
+    if (matchedCurated && matchedCurated.highestEdgeMarket) {
+      const topMarket = matchedCurated.highestEdgeMarket;
+      marketName = topMarket.marketName;
+      modelPickValue = topMarket.marketName;
+      oddsStr = topMarket.sportsbookOdds || '-110';
+      edgePercent = topMarket.edgePercent || 7.5;
+
+      if (topMarket.marketType === 'TOTAL_UNDER') {
+        marketCategory = 'TOTAL';
+        const line = parseFloat(topMarket.sportsbookLine.replace(/[^0-9.]/g, '')) || sportsbookTotal;
+        sportsbookLine = String(line);
+        if (actualTotal < line) {
+          outcome = 'WON';
+          valueDifferential = `+${(line - actualTotal).toFixed(1)} Goals buffer (Under covered)`;
+        } else if (actualTotal === line) {
+          outcome = 'PUSH';
+          valueDifferential = `Push exactly on line (${line} Goals)`;
+        } else {
+          outcome = 'LOST';
+          valueDifferential = `-${(actualTotal - line).toFixed(1)} Goals over (Under missed)`;
+        }
+      } else if (topMarket.marketType === 'TOTAL_OVER') {
+        marketCategory = 'TOTAL';
+        const line = parseFloat(topMarket.sportsbookLine.replace(/[^0-9.]/g, '')) || sportsbookTotal;
+        sportsbookLine = String(line);
+        if (actualTotal > line) {
+          outcome = 'WON';
+          valueDifferential = `+${(actualTotal - line).toFixed(1)} Goals clearance (Over covered)`;
+        } else if (actualTotal === line) {
+          outcome = 'PUSH';
+          valueDifferential = `Push exactly on line (${line} Goals)`;
+        } else {
+          outcome = 'LOST';
+          valueDifferential = `-${(line - actualTotal).toFixed(1)} Goals short (Over missed)`;
+        }
+      } else if (topMarket.marketType === 'PUCKLINE_AWAY') {
+        marketCategory = 'SPREAD';
+        sportsbookLine = '+1.5';
+        const margin = awayScore - homeScore;
+        const cover = margin + 1.5;
+        if (cover > 0) {
+          outcome = 'WON';
+          valueDifferential = `Covered by +${cover.toFixed(1)} Goals (Puckline covered)`;
+        } else {
+          outcome = 'LOST';
+          valueDifferential = `Missed by ${Math.abs(cover).toFixed(1)} Goals (Puckline missed)`;
+        }
+      } else if (topMarket.marketType === 'PUCKLINE_HOME') {
+        marketCategory = 'SPREAD';
+        sportsbookLine = '-1.5';
+        const margin = homeScore - awayScore;
+        const cover = margin - 1.5;
+        if (cover > 0) {
+          outcome = 'WON';
+          valueDifferential = `Covered by +${cover.toFixed(1)} Goals (Puckline covered)`;
+        } else {
+          outcome = 'LOST';
+          valueDifferential = `Missed by ${Math.abs(cover).toFixed(1)} Goals (Puckline missed)`;
+        }
+      } else if (topMarket.marketType === 'MONEYLINE_AWAY') {
+        marketCategory = 'MONEYLINE';
+        sportsbookLine = 'ML';
+        outcome = awayScore > homeScore ? 'WON' : 'LOST';
+        valueDifferential = awayScore > homeScore ? 'Moneyline Victory' : 'Moneyline Defeat';
+      } else if (topMarket.marketType === 'MONEYLINE_HOME') {
+        marketCategory = 'MONEYLINE';
+        sportsbookLine = 'ML';
+        outcome = homeScore > awayScore ? 'WON' : 'LOST';
+        valueDifferential = homeScore > awayScore ? 'Moneyline Victory' : 'Moneyline Defeat';
       }
     } else {
-      if (actualTotal > sportsbookTotal) {
-        outcome = 'WON';
-        const diff = (actualTotal - sportsbookTotal).toFixed(1);
-        valueDifferential = `+${diff} Goals clearance (Over covered)`;
+      const isUnder = forecast.goalEdge <= 0;
+      marketCategory = 'TOTAL';
+      marketName = isUnder ? `UNDER ${sportsbookTotal} Goals` : `OVER ${sportsbookTotal} Goals`;
+      modelPickValue = marketName;
+      sportsbookLine = String(sportsbookTotal);
+      oddsStr = '-110';
+      edgePercent = Number((6.0 + Math.abs(forecast.goalEdge) * 5.0).toFixed(1));
+
+      if (actualTotal === sportsbookTotal) {
+        outcome = 'PUSH';
+        valueDifferential = `Push exactly on line (${sportsbookTotal} Goals)`;
+      } else if (isUnder) {
+        if (actualTotal < sportsbookTotal) {
+          outcome = 'WON';
+          valueDifferential = `+${(sportsbookTotal - actualTotal).toFixed(1)} Goals buffer (Under covered)`;
+        } else {
+          outcome = 'LOST';
+          valueDifferential = `-${(actualTotal - sportsbookTotal).toFixed(1)} Goals over (Under missed)`;
+        }
       } else {
-        outcome = 'LOST';
-        const diff = (sportsbookTotal - actualTotal).toFixed(1);
-        valueDifferential = `-${diff} Goals short (Over missed)`;
+        if (actualTotal > sportsbookTotal) {
+          outcome = 'WON';
+          valueDifferential = `+${(actualTotal - sportsbookTotal).toFixed(1)} Goals clearance (Over covered)`;
+        } else {
+          outcome = 'LOST';
+          valueDifferential = `-${(sportsbookTotal - actualTotal).toFixed(1)} Goals short (Over missed)`;
+        }
       }
     }
 
-    const edgePercent = Number((6.0 + Math.abs(forecast.goalEdge) * 5.0).toFixed(1));
     const profitUnits = calcProfitUnits(oddsStr, outcome, 1.0);
     const isSuccess = outcome === 'WON';
 
@@ -290,14 +376,14 @@ export function gradeCompletedNHLGame(event: any): GradedModelPick | null {
       homeAbbrev: homeProf.abbreviation,
       awayLogo: `https://assets.nhle.com/logos/nhl/svg/${awayProf.abbreviation}_light.svg`,
       homeLogo: `https://assets.nhle.com/logos/nhl/svg/${homeProf.abbreviation}_light.svg`,
-      marketCategory: 'TOTAL',
+      marketCategory,
       marketName,
       pickName: marketName,
-      sportsbookLine: String(sportsbookTotal),
+      sportsbookLine,
       sportsbookOdds: oddsStr,
       decimalOdds: 1.91,
       modelPickValue,
-      modelProjection: forecast.modelProjectedTotal,
+      modelProjection,
       modelWinProb: 0.605,
       edgePercent,
       confidence: edgePercent >= 8.5 ? 'HIGH' : 'MEDIUM',
