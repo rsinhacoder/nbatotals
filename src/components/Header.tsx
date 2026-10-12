@@ -30,6 +30,7 @@ interface HeaderProps {
   nhlUpcomingCount?: number;
   khlUpcomingCount?: number;
   trackedBetsCount: number;
+  currentSeasonPicksCount?: number;
   seasonLabel: string;
   activeModel: ModelConfig;
   onSelectModel: (config: ModelConfig) => void;
@@ -96,6 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
   nhlUpcomingCount = 6,
   khlUpcomingCount = 6,
   trackedBetsCount,
+  currentSeasonPicksCount,
   seasonLabel,
   activeModel,
   onSelectModel,
@@ -120,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
             id: 'results',
             label: 'Model Correctness',
             icon: CheckCircle2,
-            badge: '2026–27 Season',
+            badge: currentSeasonPicksCount ? `${currentSeasonPicksCount} Graded` : '2026–27 Season',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },
@@ -165,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
             id: 'results',
             label: 'Model Correctness',
             icon: CheckCircle2,
-            badge: '2026–27 Season',
+            badge: currentSeasonPicksCount ? `${currentSeasonPicksCount} Graded` : '2026–27 Season',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },
@@ -209,7 +211,7 @@ export const Header: React.FC<HeaderProps> = ({
             id: 'results',
             label: 'Model Correctness',
             icon: CheckCircle2,
-            badge: '2026–27 Season',
+            badge: currentSeasonPicksCount ? `${currentSeasonPicksCount} Graded` : '2026–27 Season',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },

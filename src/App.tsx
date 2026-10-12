@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { PicksBoardTab } from './components/PicksBoardTab';
 import { GameAnalyzerTab } from './components/GameAnalyzerTab';
@@ -47,6 +47,16 @@ import { KHLMatchupAnalyzerTab } from './components/khl/KHLMatchupAnalyzerTab';
 import { KHLHistoricalStatsTab } from './components/khl/KHLHistoricalStatsTab';
 import { getCuratedUpcomingKHLMatches } from './utils/khlScheduleApi';
 import type { KHLUpcomingMatch, KHLMarketEdge } from './types/khl';
+import {
+  fetchAndGradeAllRecentGameResults,
+  gradeCompletedNBAGame,
+  reconcileTrackedBets,
+} from './utils/gameResultsUpdater';
+import {
+  SEASON_2026_27_PICKS,
+  enrichPickComparison,
+} from './data/seasonResultsData';
+import type { GradedModelPick } from './types/results';
 
 const STORAGE_KEY_GAMES = 'nba_quant_games_v4';
 const STORAGE_KEY_REFERENCES = 'nba_quant_references_v4';
@@ -56,6 +66,7 @@ const STORAGE_KEY_BETS = 'nba_quant_bets_v2';
 const STORAGE_KEY_SPORT = 'quant_selected_sport_v1';
 const STORAGE_KEY_NHL_UPCOMING = 'nhl_quant_upcoming_v1';
 const STORAGE_KEY_KHL_UPCOMING = 'khl_quant_upcoming_v1';
+const STORAGE_KEY_2026_PICKS = 'nba_quant_graded_picks_2026_27_v4';
 
 export function App() {
   // Navigation: 5 core human-centered tabs
@@ -134,6 +145,47 @@ export function App() {
       },
     ];
   });
+
+  // 2026–27 Current Season Graded Picks Ledger (Synchronized after every game result)
+  const [picks2026_27, setPicks2026_27] = useState<GradedModelPick[]>(() => {
+    try {
+      const saved =
+        localStorage.getItem(STORAGE_KEY_2026_PICKS) ||
+        localStorage.getItem('nba_quant_graded_picks_2026_27_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Build set of existing game identifiers (id and date_sport_away_home)
+          const savedIds = new Set(parsed.map((p: any) => p.id));
+          const savedMatchupKeys = new Set(
+            parsed.map((p: any) =>
+              `${p.date}_${p.sport}_${(p.awayAbbrev || '').toUpperCase()}_${(p.homeAbbrev || '').toUpperCase()}`
+            )
+          );
+
+          // Include any verified seed picks (like yesterday's Oct 11 games) that are missing from localStorage
+          const missingFromSeed = SEASON_2026_27_PICKS.filter((p) => {
+            const key = `${p.date}_${p.sport}_${(p.awayAbbrev || '').toUpperCase()}_${(p.homeAbbrev || '').toUpperCase()}`;
+            return !savedIds.has(p.id) && !savedMatchupKeys.has(key);
+          });
+
+          const combined = [...missingFromSeed, ...parsed].sort((a, b) => {
+            const dateCompare = b.date.localeCompare(a.date);
+            if (dateCompare !== 0) return dateCompare;
+            return (b.id || '').localeCompare(a.id || '');
+          });
+
+          return combined.map(enrichPickComparison);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read saved 2026 picks:', e);
+    }
+    return SEASON_2026_27_PICKS.map(enrichPickComparison);
+  });
+
+  const [isSyncingResults, setIsSyncingResults] = useState(false);
+  const [lastResultsSyncTime, setLastResultsSyncTime] = useState<Date>(new Date());
 
   // Preloaded matchup for Matchup Analyzer
   const [analyzerPreload, setAnalyzerPreload] = useState<{
@@ -217,6 +269,7 @@ export function App() {
           addToast('NHL Schedule Synced', `Updated ${slate.length} official NHL games & DraftKings lines`, 'success');
         }
       }
+      handleSyncGameResults(false);
     } catch (e) {
       console.warn('NHL schedule sync error:', e);
       if (showToast) {
@@ -405,6 +458,8 @@ export function App() {
       } else if (showToast) {
         addToast('Schedule Verified', 'All games are current with official ESPN scoreboard', 'info');
       }
+      // Check and update model correctness with newly finished game results
+      handleSyncGameResults(false);
     } catch (err: any) {
       console.error('Failed to sync ESPN schedule:', err);
       if (showToast) {
@@ -415,11 +470,108 @@ export function App() {
     }
   };
 
-  // Automatically fetch real ESPN schedules on app mount
+  const picksRef = useRef(picks2026_27);
+  useEffect(() => {
+    picksRef.current = picks2026_27;
+  }, [picks2026_27]);
+
+  // Core Game Results Sync & Pick Accuracy Engine
+  const handleSyncGameResults = async (showToast: boolean = true): Promise<number> => {
+    setIsSyncingResults(true);
+    try {
+      const result = await fetchAndGradeAllRecentGameResults(picksRef.current, activeModel);
+      setLastResultsSyncTime(new Date());
+
+      if (result.newlyAddedCount > 0) {
+        setPicks2026_27(result.totalGradedPicks);
+
+        // Automatically reconcile pending tracked bets with new official box scores
+        setTrackedBets((prevBets) => {
+          const { updatedBets, resolvedCount } = reconcileTrackedBets(result.newGradedPicks, prevBets);
+          if (resolvedCount > 0 && showToast) {
+            addToast('Bets Reconciled', `Resolved ${resolvedCount} pending bet(s) with official box scores!`, 'success');
+          }
+          return updatedBets;
+        });
+
+        if (showToast) {
+          const topPick = result.newGradedPicks[0];
+          addToast(
+            'Model Correctness Updated',
+            `Audited ${result.newlyAddedCount} newly completed game(s). Latest: ${topPick.matchup} (${topPick.correctness})`,
+            'success'
+          );
+        }
+      } else if (showToast) {
+        addToast(
+          'Model Correctness Verified',
+          'All completed game results are up to date with official scoreboards.',
+          'info'
+        );
+      }
+      return result.newlyAddedCount;
+    } catch (err) {
+      console.warn('Failed to sync game results:', err);
+      if (showToast) {
+        addToast('Sync Notice', 'Could not reach scoreboards. Active ledger preserved.', 'info');
+      }
+      return 0;
+    } finally {
+      setIsSyncingResults(false);
+    }
+  };
+
+  const handleResetPicksToLatest = async () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY_2026_PICKS);
+      localStorage.removeItem('nba_quant_graded_picks_2026_27_v3');
+      const seed = SEASON_2026_27_PICKS.map(enrichPickComparison);
+      setPicks2026_27(seed);
+      addToast('Ledger Refreshed', 'Reloaded official season results dataset.', 'info');
+      const res = await fetchAndGradeAllRecentGameResults(seed, activeModel);
+      if (res.newlyAddedCount > 0) {
+        setPicks2026_27(res.totalGradedPicks);
+      }
+    } catch (e) {
+      console.warn('Error resetting picks:', e);
+    }
+  };
+
+  const handleAddManualResult = (pick: GradedModelPick) => {
+    setPicks2026_27((prev) => [pick, ...prev]);
+    setTrackedBets((prevBets) => {
+      const { updatedBets } = reconcileTrackedBets([pick], prevBets);
+      return updatedBets;
+    });
+    addToast(
+      'Game Result Audited',
+      `${pick.matchup}: ${pick.outcome === 'WON' ? 'SUCCESS' : pick.outcome === 'LOST' ? 'FAILURE' : 'PUSH'} (${pick.modelPickValue})`,
+      'success'
+    );
+  };
+
+  // Automatically fetch schedules & sync completed game results on app mount + periodic 60s background watcher
   useEffect(() => {
     handleRefreshSchedule(false);
     handleRefreshNHLSchedule(false);
+    handleSyncGameResults(false);
+
+    // Watcher: automatically checks for newly finished game results every 60 seconds
+    const interval = setInterval(() => {
+      handleSyncGameResults(false);
+    }, 60000);
+
+    return () => clearInterval(interval);
   }, []);
+
+  // Persist picks2026_27 to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_2026_PICKS, JSON.stringify(picks2026_27));
+    } catch (e) {
+      console.error('Error saving 2026 picks to localStorage:', e);
+    }
+  }, [picks2026_27]);
 
   // Persist to localStorage
   useEffect(() => {
@@ -646,6 +798,61 @@ export function App() {
         return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
       });
     }
+
+    // Automatically grade any completed games from sync into the Model Correctness ledger
+    try {
+      const existingIds = new Set(picks2026_27.map((p) => p.id));
+      const newlyGradedFromSync: GradedModelPick[] = [];
+      for (const g of newGames) {
+        const id = `nba_real_${g.id}`;
+        if (!existingIds.has(id) && g.awayScore > 0 && g.homeScore > 0) {
+          const fakeEvent = {
+            id: g.id,
+            date: g.date,
+            competitions: [
+              {
+                competitors: [
+                  {
+                    homeAway: 'home',
+                    score: String(g.homeScore),
+                    team: { displayName: g.homeTeam, abbreviation: g.homeTeam.slice(0, 3).toUpperCase() },
+                    linescores: [
+                      { period: 1, value: g.q1Home },
+                      { period: 2, value: g.q2Home },
+                      { period: 3, value: g.q3Home },
+                      { period: 4, value: g.q4Home },
+                    ],
+                  },
+                  {
+                    homeAway: 'away',
+                    score: String(g.awayScore),
+                    team: { displayName: g.awayTeam, abbreviation: g.awayTeam.slice(0, 3).toUpperCase() },
+                    linescores: [
+                      { period: 1, value: g.q1Away },
+                      { period: 2, value: g.q2Away },
+                      { period: 3, value: g.q3Away },
+                      { period: 4, value: g.q4Away },
+                    ],
+                  },
+                ],
+              },
+            ],
+          };
+          const graded = gradeCompletedNBAGame(fakeEvent, activeModel);
+          if (graded) {
+            newlyGradedFromSync.push(graded);
+            existingIds.add(id);
+          }
+        }
+      }
+      if (newlyGradedFromSync.length > 0) {
+        setPicks2026_27((prev) => [...newlyGradedFromSync, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+        addToast('Model Correctness Updated', `Graded ${newlyGradedFromSync.length} completed game(s) from scoreboard sync`, 'success');
+      }
+    } catch (e) {
+      console.warn('Error grading from scoreboard sync:', e);
+    }
+
     addToast('Scoreboard Synced', `Processed ${newGames.length} games`, 'success');
   };
 
@@ -668,6 +875,7 @@ export function App() {
         nhlUpcomingCount={nhlUpcomingMatches.length}
         khlUpcomingCount={khlUpcomingMatches.length}
         trackedBetsCount={trackedBets.filter((b) => b.status === 'PENDING').length}
+        currentSeasonPicksCount={picks2026_27.length}
         seasonLabel={seasonLabel}
         activeModel={activeModel}
         onSelectModel={handleSelectModel}
@@ -696,6 +904,12 @@ export function App() {
             currentSport={currentSport}
             onSelectSport={handleSelectSport}
             historicalGames={processedGames}
+            picks2026_27={picks2026_27}
+            onSyncGameResults={handleSyncGameResults}
+            onAddManualResult={handleAddManualResult}
+            isSyncingResults={isSyncingResults}
+            lastResultsSyncTime={lastResultsSyncTime}
+            onResetPicks={handleResetPicksToLatest}
           />
         )}
 

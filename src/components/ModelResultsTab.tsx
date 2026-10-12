@@ -16,28 +16,44 @@ import {
   ChevronLeft,
   ChevronRight,
   Flame,
-  ArrowRight,
   ShieldCheck,
+  RefreshCw,
+  RotateCcw,
+  Plus,
+  X,
+  Activity,
 } from 'lucide-react';
 import {
   SEASON_2026_27_PICKS,
   SEASON_2024_25_PICKS,
-  ALL_GRADED_PICKS,
   calculateSeasonMetrics,
   getCumulativeEquityPoints,
 } from '../data/seasonResultsData';
-import type { GradedModelPick, PickOutcome } from '../types/results';
+import type { GradedModelPick } from '../types/results';
 import type { NBAGame } from '../types/nba';
+import { gradeManualGameResult, type ManualGameInput } from '../utils/gameResultsUpdater';
 
 interface ModelResultsTabProps {
   currentSport: 'nba' | 'nhl' | 'khl';
   onSelectSport?: (sport: 'nba' | 'nhl' | 'khl') => void;
   historicalGames?: NBAGame[];
+  picks2026_27?: GradedModelPick[];
+  onSyncGameResults?: () => Promise<number>;
+  onResetPicks?: () => Promise<void>;
+  onAddManualResult?: (pick: GradedModelPick) => void;
+  isSyncingResults?: boolean;
+  lastResultsSyncTime?: Date;
 }
 
 export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   currentSport,
   onSelectSport,
+  picks2026_27,
+  onSyncGameResults,
+  onResetPicks,
+  onAddManualResult,
+  isSyncingResults = false,
+  lastResultsSyncTime,
 }) => {
   // Season Selector: '2026-27' (Current Season) is DEFAULT
   const [seasonFilter, setSeasonFilter] = useState<'2026-27' | '2024-25' | 'ALL'>('2026-27');
@@ -68,19 +84,38 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
+  // Manual Game Grader Modal State
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [manualSport, setManualSport] = useState<'NBA' | 'NHL' | 'KHL'>('NBA');
+  const [manualDate, setManualDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [manualAwayTeam, setManualAwayTeam] = useState('');
+  const [manualHomeTeam, setManualHomeTeam] = useState('');
+  const [manualAwayScore, setManualAwayScore] = useState('');
+  const [manualHomeScore, setManualHomeScore] = useState('');
+  const [manualLine, setManualLine] = useState('');
+  const [manualOdds, setManualOdds] = useState('-110');
+  const [manualPickOverride, setManualPickOverride] = useState<'AUTO' | 'UNDER' | 'OVER'>('AUTO');
+  const [manualErrorMessage, setManualErrorMessage] = useState('');
+
+  // Active 2026-27 Picks (defaults to props, then static dataset)
+  const active2026Picks = useMemo(() => {
+    return picks2026_27 && picks2026_27.length > 0 ? picks2026_27 : SEASON_2026_27_PICKS;
+  }, [picks2026_27]);
+
   // Base picks determined by selected season
   const basePicks = useMemo(() => {
-    if (seasonFilter === '2026-27') return SEASON_2026_27_PICKS;
+    if (seasonFilter === '2026-27') return active2026Picks;
     if (seasonFilter === '2024-25') return SEASON_2024_25_PICKS;
-    return ALL_GRADED_PICKS;
-  }, [seasonFilter]);
+    return [...active2026Picks, ...SEASON_2024_25_PICKS];
+  }, [seasonFilter, active2026Picks]);
 
   // Dynamic month options based on season
   const monthOptions = useMemo(() => {
     if (seasonFilter === '2026-27') {
+      const months = Array.from(new Set(active2026Picks.map((p) => p.date.slice(0, 7)))).sort().reverse();
       return [
         { id: 'ALL', label: 'Full 2026–27 Season' },
-        { id: '2026-10', label: 'Oct 2026 (Active Slate)' },
+        ...months.map((m) => ({ id: m, label: `${m} (Active Slate)` })),
       ];
     } else if (seasonFilter === '2024-25') {
       return [
@@ -101,7 +136,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
         { id: '2025-04', label: 'Apr 2025' },
       ];
     }
-  }, [seasonFilter]);
+  }, [seasonFilter, active2026Picks]);
 
   // Filtered picks based on current selections
   const filteredPicks = useMemo(() => {
@@ -294,8 +329,8 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
           >
             <Flame className="w-3.5 h-3.5 text-amber-300" />
             <span>2026–27 (Current Season)</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/30 font-mono">
-              {SEASON_2026_27_PICKS.length}
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/30 font-mono font-bold">
+              {active2026Picks.length}
             </span>
           </button>
 
@@ -331,7 +366,75 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>All ({ALL_GRADED_PICKS.length.toLocaleString()})</span>
+            <span>All ({(active2026Picks.length + SEASON_2024_25_PICKS.length).toLocaleString()})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Live Game Result Watcher & Sync Status Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-3 w-3 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                Live Game Result Engine Active
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                <Activity className="w-3 h-3 text-emerald-500" />
+                Auto-Updates After Every Game
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Continuously verifies box scores from official NBA &amp; NHL scoreboards, grading Model Pick Value vs Actual Score after each game.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+          {lastResultsSyncTime && (
+            <span className="text-[11px] font-mono text-slate-400 hidden md:inline">
+              Synced: {lastResultsSyncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+
+          {onSyncGameResults && (
+            <button
+              onClick={() => onSyncGameResults()}
+              disabled={isSyncingResults}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+              title="Check ESPN Scoreboards for newly completed game results"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingResults ? 'animate-spin' : ''}`} />
+              <span>{isSyncingResults ? 'Checking Scores...' : 'Check Game Results'}</span>
+            </button>
+          )}
+
+          {onResetPicks && (
+            <button
+              onClick={() => onResetPicks()}
+              disabled={isSyncingResults}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 shadow-2xs transition-all cursor-pointer"
+              title="Reload all verified official results and clear local cache"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <span>Reload Official Slate</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              setManualErrorMessage('');
+              setIsManualModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 shadow-2xs transition-all cursor-pointer"
+            title="Grade a custom or exhibition game result"
+          >
+            <Plus className="w-3.5 h-3.5 text-blue-500" />
+            <span>+ Grade Result</span>
           </button>
         </div>
       </div>
@@ -1201,6 +1304,277 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Manual Game Result Modal */}
+      {isManualModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white dark:bg-[#0f1523] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative text-slate-900 dark:text-zinc-100 max-h-[90vh] overflow-y-auto">
+            {/* Close button */}
+            <button
+              onClick={() => setIsManualModalOpen(false)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60">
+                <Plus className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white m-0">
+                  Grade Game Box Score
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
+                  Audit model correctness for any finished match with final scores
+                </p>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const awayScoreNum = parseInt(manualAwayScore, 10);
+                const homeScoreNum = parseInt(manualHomeScore, 10);
+                const lineNum = parseFloat(manualLine);
+
+                if (!manualAwayTeam.trim() || !manualHomeTeam.trim()) {
+                  setManualErrorMessage('Please enter both away and home team names.');
+                  return;
+                }
+                if (isNaN(awayScoreNum) || isNaN(homeScoreNum) || awayScoreNum < 0 || homeScoreNum < 0) {
+                  setManualErrorMessage('Please enter valid final box scores.');
+                  return;
+                }
+                if (isNaN(lineNum) || lineNum <= 0) {
+                  setManualErrorMessage('Please enter a valid sportsbook line.');
+                  return;
+                }
+
+                const manualInput: ManualGameInput = {
+                  sport: manualSport,
+                  date: manualDate,
+                  awayTeam: manualAwayTeam.trim(),
+                  homeTeam: manualHomeTeam.trim(),
+                  awayScore: awayScoreNum,
+                  homeScore: homeScoreNum,
+                  sportsbookLine: lineNum,
+                  sportsbookOdds: manualOdds.trim() || '-110',
+                  pickType: manualPickOverride === 'AUTO' ? undefined : manualPickOverride,
+                };
+
+                const gradedPick = gradeManualGameResult(manualInput);
+                if (onAddManualResult) {
+                  onAddManualResult(gradedPick);
+                }
+                setIsManualModalOpen(false);
+                setManualAwayTeam('');
+                setManualHomeTeam('');
+                setManualAwayScore('');
+                setManualHomeScore('');
+                setManualLine('');
+                setManualErrorMessage('');
+              }}
+              className="space-y-3.5 text-xs"
+            >
+              {/* Sport Selector */}
+              <div>
+                <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                  Sport League
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['NBA', 'NHL', 'KHL'] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        setManualSport(s);
+                        if (s === 'NBA' && (!manualLine || manualLine === '5.5' || manualLine === '6.0')) {
+                          setManualLine('224.5');
+                        } else if ((s === 'NHL' || s === 'KHL') && (!manualLine || manualLine === '224.5')) {
+                          setManualLine('6.0');
+                        }
+                      }}
+                      className={`py-1.5 px-3 rounded-xl border font-bold transition-all cursor-pointer text-center ${
+                        manualSport === s
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      {s === 'NBA' ? '🏀 NBA' : s === 'NHL' ? '🏒 NHL' : '❄️ KHL'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                  Game Date
+                </label>
+                <input
+                  type="date"
+                  value={manualDate}
+                  onChange={(e) => setManualDate(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Teams */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                    Away Team
+                  </label>
+                  <input
+                    type="text"
+                    value={manualAwayTeam}
+                    onChange={(e) => setManualAwayTeam(e.target.value)}
+                    placeholder="e.g. Dallas Mavericks"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                    Home Team
+                  </label>
+                  <input
+                    type="text"
+                    value={manualHomeTeam}
+                    onChange={(e) => setManualHomeTeam(e.target.value)}
+                    placeholder="e.g. Houston Rockets"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Scores */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                    Away Final Score
+                  </label>
+                  <input
+                    type="number"
+                    value={manualAwayScore}
+                    onChange={(e) => setManualAwayScore(e.target.value)}
+                    placeholder={manualSport === 'NBA' ? '112' : '3'}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                    Home Final Score
+                  </label>
+                  <input
+                    type="number"
+                    value={manualHomeScore}
+                    onChange={(e) => setManualHomeScore(e.target.value)}
+                    placeholder={manualSport === 'NBA' ? '108' : '2'}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Sportsbook Line & Odds */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                    Closing Line ({manualSport === 'NBA' ? 'Pts' : 'Goals'})
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={manualLine}
+                    onChange={(e) => setManualLine(e.target.value)}
+                    placeholder={manualSport === 'NBA' ? '224.5' : '6.0'}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                    Consensus Odds
+                  </label>
+                  <input
+                    type="text"
+                    value={manualOdds}
+                    onChange={(e) => setManualOdds(e.target.value)}
+                    placeholder="-110"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Pick Direction Override */}
+              <div>
+                <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
+                  Model Pick Logic
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setManualPickOverride('AUTO')}
+                    className={`py-1.5 px-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer text-center ${
+                      manualPickOverride === 'AUTO'
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-zinc-400'
+                    }`}
+                  >
+                    Auto Model Projection
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setManualPickOverride('UNDER')}
+                    className={`py-1.5 px-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer text-center ${
+                      manualPickOverride === 'UNDER'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-zinc-400'
+                    }`}
+                  >
+                    Force UNDER
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setManualPickOverride('OVER')}
+                    className={`py-1.5 px-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer text-center ${
+                      manualPickOverride === 'OVER'
+                        ? 'bg-rose-600 text-white border-rose-600'
+                        : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-zinc-400'
+                    }`}
+                  >
+                    Force OVER
+                  </button>
+                </div>
+              </div>
+
+              {manualErrorMessage && (
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs">
+                  {manualErrorMessage}
+                </div>
+              )}
+
+              {/* Submit Buttons */}
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsManualModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-colors shadow-xs cursor-pointer"
+                >
+                  Audit &amp; Add Result
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
