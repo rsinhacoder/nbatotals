@@ -20,6 +20,8 @@ import { MobileAppContainer } from './components/mobile/MobileAppContainer';
 import { isNativePlatform } from './utils/capacitorApp';
 import { nbaRosterService } from './services/nbaRosterService';
 import { DEFAULT_OPENING_CONSENSUS_MARKETS } from './services/sportsbookOddsService';
+import { AnalyticsDashboardTab } from './components/AnalyticsDashboardTab';
+import { analytics } from './utils/analytics';
 import type { PlayerPropsForecast } from './types/playerProps';
 
 import { INITIAL_NBA_GAMES, INITIAL_REFERENCE_TOTALS } from './data/mockGames';
@@ -77,7 +79,76 @@ const STORAGE_KEY_2026_PICKS = 'nba_quant_graded_picks_2026_27_v5';
 export function App() {
   // Navigation: 5 core human-centered tabs
   // 'picks' | 'analyzer' | 'tracker' | 'trackrecord' | 'academy'
-  const [activeTab, setActiveTab] = useState<string>('picks');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) return tabParam;
+    }
+    return 'picks';
+  });
+
+  const [urlGameId, setUrlGameId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('game');
+    }
+    return null;
+  });
+
+  // Initialize GA4 engine once on app start
+  useEffect(() => {
+    analytics.init();
+  }, []);
+
+  // Sync activeTab with browser URL search parameters and dynamic title
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', activeTab);
+    window.history.replaceState({}, '', url.toString());
+
+    // Dynamic Title Mapping for SEO & Analytics
+    const titles: Record<string, string> = {
+      picks: 'NBA Totals — Free Daily NBA Over/Under Predictions & Computer Picks',
+      'player-props': 'NBA Player Props — Daily Points Lines, Roster Projections & Edges',
+      results: 'Model Correctness — 2026–27 Graded Predictions & Historical Evaluation',
+      analyzer: 'NBA Matchup Simulator — Interactive Pace Floor & Total Predictor',
+      tracker: 'Bet Tracker — Portfolio Performance & ROI Ledger',
+      trackrecord: 'Track Record & Historical Database — 6,000 NBA Games Backtest',
+      academy: 'Quantitative Strategy Academy — Rule of 47 Pace Floor Guide',
+      analytics: 'Google Analytics 4 & Engagement Dashboard — NBATotals.com QA',
+      'nhl-picks': 'NHL Edge Board — Quantitative Hockey Totals Predictions',
+      'nhl-analyzer': 'NHL Matchup Analyzer — Team Pace & Totals Simulator',
+      'nhl-stats': 'NHL 5-Season Historical Study — 6,115 Completed Games',
+      'khl-picks': 'KHL Edge Board — Kontinental Hockey League Totals',
+      'khl-analyzer': 'KHL Matchup Analyzer — Continental Hockey Forecaster',
+      'khl-stats': 'KHL 5-Season Historical Study — Empirical Totals Dataset',
+    };
+
+    const newTitle = titles[activeTab] || 'NBA Totals — Quantitative Sports Analytics';
+    document.title = newTitle;
+
+    // Track SPA page view in GA4
+    analytics.trackPageView(`/?tab=${activeTab}`, newTitle, activeTab);
+  }, [activeTab]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab') || 'picks';
+      setActiveTab(tab);
+      setUrlGameId(params.get('game'));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
@@ -1000,6 +1071,8 @@ export function App() {
             onRefreshSchedule={() => handleRefreshSchedule(true)}
             isSyncingSchedule={isSyncingSchedule}
             lastSyncTime={lastScheduleSyncTime}
+            onNavigateTab={(tab) => setActiveTab(tab)}
+            initialSelectedGameId={urlGameId}
           />
         )}
 
@@ -1127,6 +1200,13 @@ export function App() {
         {activeTab === 'academy' && (
           <QuantAcademyTab activeModel={activeModel} />
         )}
+
+        {/* GA4 & User Engagement QA Dashboard */}
+        {activeTab === 'analytics' && (
+          <AnalyticsDashboardTab
+            onNavigateTab={(tab) => setActiveTab(tab)}
+          />
+        )}
       </main>
 
       {/* Floating Toast Notification Container */}
@@ -1189,8 +1269,13 @@ export function App() {
                   </button>
                 </li>
                 <li>
+                  <button onClick={() => setActiveTab('player-props')} className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
+                    NBA Player Props &amp; Full Rosters
+                  </button>
+                </li>
+                <li>
                   <button onClick={() => setActiveTab('results')} className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
-                    2024–25 Model Correctness &amp; Pick Accuracy
+                    2026–27 Model Correctness &amp; Pick Accuracy
                   </button>
                 </li>
                 <li>
@@ -1211,6 +1296,11 @@ export function App() {
                 <li>
                   <button onClick={() => setActiveTab('tracker')} className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
                     Portfolio &amp; Bet ROI Tracker
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => setActiveTab('analytics')} className="hover:text-blue-600 dark:hover:text-cyan-400 cursor-pointer font-semibold text-cyan-500">
+                    GA4 &amp; Engagement Dashboard
                   </button>
                 </li>
               </ul>

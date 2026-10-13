@@ -11,6 +11,7 @@ import {
   FileText,
   Mail,
   CheckCircle2,
+  Download,
 } from 'lucide-react';
 import type { OddsFormat } from '../../types/playerProps';
 import { type ModelConfig, MODEL_PRESETS } from '../../utils/modelConstants';
@@ -186,6 +187,15 @@ export const MobileSettingsScreen: React.FC<MobileSettingsScreenProps> = ({
             <span>Capacitor Native Bridge</span>
           </div>
         </div>
+
+        <a
+          href="/app-debug.apk"
+          download="NBA-Totals-AI-Sports-Picks.apk"
+          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 active:scale-98 transition-all cursor-pointer"
+        >
+          <Download className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+          <span>Download Native Android APK (5.1 MB)</span>
+        </a>
       </div>
 
       {/* 6. Legal, Disclaimers & Google Play Compliance */}

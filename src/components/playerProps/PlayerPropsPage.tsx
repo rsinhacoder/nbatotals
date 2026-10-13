@@ -40,6 +40,7 @@ import { AdBanner } from '../AdBanner';
 import { sportsbookOddsService } from '../../services/sportsbookOddsService';
 import { nbaRosterService } from '../../services/nbaRosterService';
 import type { TrackedBet, UpcomingMatch } from '../../types/nba';
+import { analytics } from '../../utils/analytics';
 
 interface PlayerPropsPageProps {
   upcomingMatches?: UpcomingMatch[];
@@ -74,6 +75,22 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedForecast, setSelectedForecast] = useState<PlayerPropsForecast | null>(null);
+
+  useEffect(() => {
+    analytics.trackPageView('/?tab=player-props', 'NBA Player Props & Edge Scanner', 'player_props');
+  }, []);
+
+  const handleSelectPlayer = (fc: PlayerPropsForecast) => {
+    setSelectedForecast(fc);
+    analytics.trackPlayerPropDetailView(
+      fc.playerId,
+      fc.playerName,
+      fc.team,
+      fc.pointsLine,
+      fc.modelProjectedPoints,
+      fc.recommendation
+    );
+  };
 
   // Grouped Games & Schedule Data
   const [groupedGames, setGroupedGames] = useState<ScheduledGameWithRosters[]>([]);
@@ -744,7 +761,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                                     <PlayerPropsTable
                                       forecasts={awayStarters}
                                       oddsFormat={oddsFormat}
-                                      onSelectPlayer={setSelectedForecast}
+                                      onSelectPlayer={handleSelectPlayer}
                                       onTrackProp={handleQuickTrack}
                                     />
                                   </div>
@@ -754,7 +771,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                                         key={f.marketId}
                                         forecast={f}
                                         oddsFormat={oddsFormat}
-                                        onSelectPlayer={setSelectedForecast}
+                                        onSelectPlayer={handleSelectPlayer}
                                         onTrackProp={handleQuickTrack}
                                       />
                                     ))}
@@ -772,7 +789,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                                     <PlayerPropsTable
                                       forecasts={awayBench}
                                       oddsFormat={oddsFormat}
-                                      onSelectPlayer={setSelectedForecast}
+                                      onSelectPlayer={handleSelectPlayer}
                                       onTrackProp={handleQuickTrack}
                                     />
                                   </div>
@@ -782,7 +799,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                                         key={f.marketId}
                                         forecast={f}
                                         oddsFormat={oddsFormat}
-                                        onSelectPlayer={setSelectedForecast}
+                                        onSelectPlayer={handleSelectPlayer}
                                         onTrackProp={handleQuickTrack}
                                       />
                                     ))}
@@ -819,7 +836,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                                     <PlayerPropsTable
                                       forecasts={homeStarters}
                                       oddsFormat={oddsFormat}
-                                      onSelectPlayer={setSelectedForecast}
+                                      onSelectPlayer={handleSelectPlayer}
                                       onTrackProp={handleQuickTrack}
                                     />
                                   </div>
@@ -829,7 +846,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                                         key={f.marketId}
                                         forecast={f}
                                         oddsFormat={oddsFormat}
-                                        onSelectPlayer={setSelectedForecast}
+                                        onSelectPlayer={handleSelectPlayer}
                                         onTrackProp={handleQuickTrack}
                                       />
                                     ))}
@@ -847,7 +864,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                                     <PlayerPropsTable
                                       forecasts={homeBench}
                                       oddsFormat={oddsFormat}
-                                      onSelectPlayer={setSelectedForecast}
+                                      onSelectPlayer={handleSelectPlayer}
                                       onTrackProp={handleQuickTrack}
                                     />
                                   </div>
@@ -857,7 +874,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                                         key={f.marketId}
                                         forecast={f}
                                         oddsFormat={oddsFormat}
-                                        onSelectPlayer={setSelectedForecast}
+                                        onSelectPlayer={handleSelectPlayer}
                                         onTrackProp={handleQuickTrack}
                                       />
                                     ))}
@@ -882,7 +899,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                 <PlayerPropsTable
                   forecasts={filteredForecasts}
                   oddsFormat={oddsFormat}
-                  onSelectPlayer={setSelectedForecast}
+                  onSelectPlayer={handleSelectPlayer}
                   onTrackProp={handleQuickTrack}
                 />
               </div>
@@ -893,7 +910,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                     key={f.marketId}
                     forecast={f}
                     oddsFormat={oddsFormat}
-                    onSelectPlayer={setSelectedForecast}
+                    onSelectPlayer={handleSelectPlayer}
                     onTrackProp={handleQuickTrack}
                   />
                 ))}
@@ -908,7 +925,7 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
         <FirstQuarterScannerView
           forecasts={allForecasts}
           oddsFormat={oddsFormat}
-          onSelectPlayer={setSelectedForecast}
+          onSelectPlayer={handleSelectPlayer}
         />
       )}
 

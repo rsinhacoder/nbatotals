@@ -13,6 +13,7 @@ import type { UpcomingMatch, TrackedBet } from '../../types/nba';
 import type { PlayerPropsForecast, OddsFormat } from '../../types/playerProps';
 import type { ModelConfig } from '../../utils/modelConstants';
 import { initializeNativeAndroid } from '../../utils/capacitorApp';
+import { analytics } from '../../utils/analytics';
 
 interface MobileAppContainerProps {
   upcomingMatches: UpcomingMatch[];
@@ -66,6 +67,11 @@ export const MobileAppContainer: React.FC<MobileAppContainerProps> = ({
     { label: 'Sat, Oct 10', value: '2026-10-10' },
     { label: 'All Games', value: 'ALL' },
   ];
+
+  // Track mobile screen view in GA4
+  useEffect(() => {
+    analytics.trackPageView(`/mobile/${activeTab}`, `NBA Totals App: ${activeTab.toUpperCase()}`, 'mobile_app');
+  }, [activeTab]);
 
   // Android hardware back button handler
   useEffect(() => {

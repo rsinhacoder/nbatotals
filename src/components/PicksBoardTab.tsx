@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   TrendingDown,
   TrendingUp,
@@ -13,11 +13,19 @@ import {
   Check,
   Calendar,
   Clock,
+  Share2,
+  Star,
+  ArrowRight,
+  Users,
+  BarChart3,
+  Activity,
 } from 'lucide-react';
 import { MatchDetailPage } from './MatchDetailPage';
 import { AdBanner } from './AdBanner';
 import type { UpcomingMatch, TrackedBet } from '../types/nba';
 import { getTeamProfile } from '../data/teamProfiles';
+import { analytics } from '../utils/analytics';
+import { favoritesService } from '../utils/favoritesService';
 
 interface PicksBoardTabProps {
   upcomingMatches: UpcomingMatch[];
@@ -29,6 +37,8 @@ interface PicksBoardTabProps {
   onRefreshSchedule?: () => void;
   isSyncingSchedule?: boolean;
   lastSyncTime?: Date;
+  onNavigateTab?: (tabId: string) => void;
+  initialSelectedGameId?: string | null;
 }
 
 export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
@@ -41,8 +51,19 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
   onRefreshSchedule,
   isSyncingSchedule,
   lastSyncTime,
+  onNavigateTab,
+  initialSelectedGameId,
 }) => {
-  const [filterMode, setFilterMode] = useState<'ALL' | 'TOP_EDGE' | 'UNDER' | 'OVER'>('ALL');
+  const [filterMode, setFilterMode] = useState<'ALL' | 'TOP_EDGE' | 'UNDER' | 'OVER' | 'FAVORITES'>('ALL');
+  const [favoriteMatchIds, setFavoriteMatchIds] = useState<string[]>(() => favoritesService.getFavoriteMatchIds());
+
+  useEffect(() => {
+    const unsub = favoritesService.subscribe(() => {
+      setFavoriteMatchIds(favoritesService.getFavoriteMatchIds());
+    });
+    return () => unsub();
+  }, []);
+
   const todayEasternStr = useMemo(() => {
     return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
   }, []);
@@ -56,6 +77,14 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<UpcomingMatch | null>(null);
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
+
+  // Deep-link auto-select game if ID is provided
+  useEffect(() => {
+    if (initialSelectedGameId) {
+      const match = upcomingMatches.find((m) => m.id === initialSelectedGameId);
+      if (match) setSelectedMatch(match);
+    }
+  }, [initialSelectedGameId, upcomingMatches]);
 
   // Line editing modal/inline state
   const [editingLineMatchId, setEditingLineMatchId] = useState<string | null>(null);
@@ -127,10 +156,68 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
       if (filterMode === 'UNDER' && !match.recommendation.includes('UNDER')) return false;
       if (filterMode === 'OVER' && !match.recommendation.includes('OVER')) return false;
       if (filterMode === 'TOP_EDGE' && Math.abs(match.edge) < 4.0) return false;
+      if (filterMode === 'FAVORITES' && !favoritesService.isMatchFavorite(match.id)) return false;
 
       return true;
     });
-  }, [upcomingMatches, searchTerm, filterMode, selectedDate]);
+  }, [upcomingMatches, searchTerm, filterMode, selectedDate, favoriteMatchIds]);
+
+  const handleSelectGame = (match: UpcomingMatch) => {
+    setSelectedMatch(match);
+    analytics.trackGameCardClick(
+      match.id,
+      `${match.awayTeam} @ ${match.homeTeam}`,
+      match.date,
+      match.edge,
+      match.recommendation
+    );
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('game', match.id);
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
+  const handleBackFromMatch = () => {
+    setSelectedMatch(null);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('game');
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
+  const handleToggleFavorite = (match: UpcomingMatch, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = favoritesService.toggleMatchFavorite(match.id);
+    setFavoriteMatchIds(favoritesService.getFavoriteMatchIds());
+    analytics.trackEvent(updated ? 'favorite_add' : 'favorite_remove', {
+      game_id: match.id,
+      matchup: `${match.awayTeam} @ ${match.homeTeam}`,
+    });
+  };
+
+  const handleShareMatch = async (match: UpcomingMatch, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/?tab=picks&game=${match.id}`
+      : `https://nbatotals.com/?tab=picks&game=${match.id}`;
+    const shareTitle = `${match.awayTeam} @ ${match.homeTeam} — NBA Totals Model Pick`;
+    const shareText = `Check out ${match.awayTeam} @ ${match.homeTeam} Over/Under projection on NBATotals.com.`;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        analytics.trackShare('game', `${match.awayTeam} @ ${match.homeTeam}`, 'web_share_api');
+        return;
+      } catch {}
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      analytics.trackShare('game', `${match.awayTeam} @ ${match.homeTeam}`, 'clipboard_copy');
+    } catch {}
+  };
 
   const handleStartEditLine = (match: UpcomingMatch, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -152,7 +239,14 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
 
   const toggleExpand = (matchId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setExpandedMatchId((prev) => (prev === matchId ? null : matchId));
+    const willExpand = expandedMatchId !== matchId;
+    setExpandedMatchId(willExpand ? matchId : null);
+    if (willExpand) {
+      const match = upcomingMatches.find((m) => m.id === matchId);
+      if (match) {
+        analytics.trackForecastDetailExpand(matchId, `${match.awayTeam} @ ${match.homeTeam}`);
+      }
+    }
   };
 
   // If a match is selected, render the dedicated Match Detail Page!
@@ -163,7 +257,7 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
     return (
       <MatchDetailPage
         match={currentMatchObj}
-        onBack={() => setSelectedMatch(null)}
+        onBack={handleBackFromMatch}
         onTrackBet={onTrackBet}
         onSendToAnalyzer={onSendToAnalyzer}
         isTracked={isCurrentTracked}
@@ -171,6 +265,7 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
           onUpdateSportsbookLine(matchId, newLine);
           setSelectedMatch((prev) => (prev ? { ...prev, sportsbookLine: newLine } : null));
         }}
+        onNavigateTab={onNavigateTab}
       />
     );
   }
@@ -234,6 +329,48 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
               <div className="text-[11px] text-slate-400">Zero Paywall</div>
             </div>
           </div>
+
+          {/* Quick Discovery Navigation Bar */}
+          <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-slate-400 font-sans text-[11px]">
+              Explore Related Quantitative Intelligence:
+            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {onNavigateTab && (
+                <>
+                  <button
+                    onClick={() => {
+                      analytics.trackCtaClick('hero_player_props', 'picks_board_hero', 'player-props');
+                      onNavigateTab('player-props');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-purple-500/20 text-purple-300 border border-purple-400/30 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Player Props &amp; Full Rosters</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      analytics.trackCtaClick('hero_model_results', 'picks_board_hero', 'results');
+                      onNavigateTab('results');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>Model Correctness Ledger</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      analytics.trackCtaClick('hero_strategy_academy', 'picks_board_hero', 'academy');
+                      onNavigateTab('academy');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-amber-500/20 text-amber-300 border border-amber-400/30 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                  >
+                    <span>Rule of 47 Guide</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -279,7 +416,10 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
             {/* Filter Pills */}
             <div className="flex items-center bg-slate-100 dark:bg-[#141b2b] border border-slate-200 dark:border-[#222c42] rounded-xl p-0.5 text-xs sm:text-sm">
               <button
-                onClick={() => setFilterMode('ALL')}
+                onClick={() => {
+                  setFilterMode('ALL');
+                  analytics.trackFilterApply('filter_mode', 'ALL', 'picks_board');
+                }}
                 className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
                   filterMode === 'ALL'
                     ? 'bg-white dark:bg-[#1c2438] text-slate-900 dark:text-white font-bold shadow-2xs'
@@ -289,7 +429,10 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                 All ({slateStats.total})
               </button>
               <button
-                onClick={() => setFilterMode('TOP_EDGE')}
+                onClick={() => {
+                  setFilterMode('TOP_EDGE');
+                  analytics.trackFilterApply('filter_mode', 'TOP_EDGE', 'picks_board');
+                }}
                 className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
                   filterMode === 'TOP_EDGE'
                     ? 'bg-blue-600 dark:bg-amber-500/25 text-white dark:text-amber-300 border border-transparent dark:border-amber-500/40 font-bold shadow-2xs'
@@ -300,7 +443,10 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                 Top Edge ({slateStats.highEdgeCount})
               </button>
               <button
-                onClick={() => setFilterMode('UNDER')}
+                onClick={() => {
+                  setFilterMode('UNDER');
+                  analytics.trackFilterApply('filter_mode', 'UNDER', 'picks_board');
+                }}
                 className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
                   filterMode === 'UNDER'
                     ? 'bg-emerald-600 dark:bg-emerald-500/25 text-white dark:text-emerald-300 border border-transparent dark:border-emerald-500/40 font-bold shadow-2xs'
@@ -310,7 +456,10 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                 Under ({slateStats.underPicks})
               </button>
               <button
-                onClick={() => setFilterMode('OVER')}
+                onClick={() => {
+                  setFilterMode('OVER');
+                  analytics.trackFilterApply('filter_mode', 'OVER', 'picks_board');
+                }}
                 className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
                   filterMode === 'OVER'
                     ? 'bg-rose-600 dark:bg-rose-500/25 text-white dark:text-rose-300 border border-transparent dark:border-rose-500/40 font-bold shadow-2xs'
@@ -318,6 +467,21 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                 }`}
               >
                 Over ({slateStats.overPicks})
+              </button>
+              <button
+                onClick={() => {
+                  setFilterMode('FAVORITES');
+                  analytics.trackFilterApply('filter_mode', 'FAVORITES', 'picks_board');
+                }}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                  filterMode === 'FAVORITES'
+                    ? 'bg-amber-500/25 text-amber-500 dark:text-amber-400 border border-amber-500/40 font-bold shadow-2xs'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-amber-500'
+                }`}
+                title="View your saved/starred games"
+              >
+                <Star className={`h-3.5 w-3.5 ${filterMode === 'FAVORITES' ? 'fill-amber-500 text-amber-500' : 'text-amber-500'}`} />
+                <span>Saved ({favoriteMatchIds.length})</span>
               </button>
             </div>
 
@@ -371,7 +535,10 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
             <div className="flex items-stretch gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar snap-x">
               {/* All Games Card */}
               <button
-                onClick={() => setSelectedDate('ALL')}
+                onClick={() => {
+                  setSelectedDate('ALL');
+                  analytics.trackGameDateChange('ALL', 'nba');
+                }}
                 className={`snap-start shrink-0 min-w-[80px] sm:min-w-[96px] px-3 py-2 rounded-xl border flex flex-col items-center justify-between transition-all cursor-pointer ${
                   selectedDate === 'ALL'
                     ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-500/30'
@@ -401,7 +568,10 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                 return (
                   <button
                     key={dateStr}
-                    onClick={() => setSelectedDate(dateStr)}
+                    onClick={() => {
+                      setSelectedDate(dateStr);
+                      analytics.trackGameDateChange(dateStr, 'nba');
+                    }}
                     className={`snap-start shrink-0 min-w-[82px] sm:min-w-[100px] px-3 py-2 rounded-xl border flex flex-col items-center justify-between transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-500/30'
@@ -461,8 +631,16 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                 )}
 
                 <div
-                  onClick={() => setSelectedMatch(match)}
-                  className="relative bg-gradient-to-br from-white via-slate-50/70 to-blue-50/30 dark:from-[#0d1424] dark:via-[#0c1220] dark:to-[#131c33] border border-slate-200/90 dark:border-[#1e2942] hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:shadow-xl rounded-2xl sm:rounded-3xl transition-all duration-300 shadow-xs cursor-pointer group overflow-hidden"
+                  onClick={() => handleSelectGame(match)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelectGame(match);
+                    }
+                  }}
+                  className="relative bg-gradient-to-br from-white via-slate-50/70 to-blue-50/30 dark:from-[#0d1424] dark:via-[#0c1220] dark:to-[#131c33] border border-slate-200/90 dark:border-[#1e2942] hover:border-blue-400/80 dark:hover:border-blue-500/60 hover:shadow-xl rounded-2xl sm:rounded-3xl transition-all duration-300 shadow-xs cursor-pointer group overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                   title="Click to open dedicated match page with stats and news"
                 >
                   {/* Subtle top ambient glow gradient line */}
@@ -702,6 +880,28 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
                         >
                           <SlidersHorizontal className="h-3.5 w-3.5 text-slate-600 dark:text-amber-400 shrink-0" />
                           <span className="hidden xl:inline">Analyze</span>
+                        </button>
+
+                        {/* Action Button: Favorite */}
+                        <button
+                          onClick={(e) => handleToggleFavorite(match, e)}
+                          className={`h-9 sm:h-10 w-9 sm:w-10 rounded-xl flex items-center justify-center transition-colors border shrink-0 ${
+                            favoritesService.isMatchFavorite(match.id)
+                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
+                              : 'bg-slate-100 dark:bg-[#141b2b] border-slate-200 dark:border-[#222c42] text-slate-400 dark:text-zinc-400 hover:text-amber-500'
+                          }`}
+                          title={favoritesService.isMatchFavorite(match.id) ? 'Saved' : 'Save to Favorites'}
+                        >
+                          <Star className={`h-4 w-4 ${favoritesService.isMatchFavorite(match.id) ? 'fill-amber-500 text-amber-500' : ''}`} />
+                        </button>
+
+                        {/* Action Button: Share */}
+                        <button
+                          onClick={(e) => handleShareMatch(match, e)}
+                          className="h-9 sm:h-10 w-9 sm:w-10 rounded-xl bg-slate-100 dark:bg-[#141b2b] hover:bg-slate-200 dark:hover:bg-[#1c2438] text-slate-400 dark:text-zinc-400 hover:text-blue-500 flex items-center justify-center border border-slate-200 dark:border-[#222c42] shrink-0"
+                          title="Share Matchup"
+                        >
+                          <Share2 className="h-3.5 w-3.5" />
                         </button>
 
                         {/* Details Toggle */}

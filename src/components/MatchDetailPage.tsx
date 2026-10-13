@@ -10,11 +10,19 @@ import {
   ExternalLink,
   Newspaper,
   Layers,
+  Share2,
+  Star,
+  Check,
+  GraduationCap,
+  Users,
+  BarChart3,
 } from 'lucide-react';
 import type { UpcomingMatch } from '../types/nba';
 import { getTeamProfile } from '../data/teamProfiles';
 import { fetchNBANews, type NBANewsArticle } from '../utils/espnApi';
 import { AdBanner } from './AdBanner';
+import { analytics } from '../utils/analytics';
+import { favoritesService } from '../utils/favoritesService';
 
 interface MatchDetailPageProps {
   match: UpcomingMatch;
@@ -23,6 +31,7 @@ interface MatchDetailPageProps {
   onSendToAnalyzer: (match: UpcomingMatch) => void;
   isTracked: boolean;
   onUpdateSportsbookLine: (matchId: string, newLine: number) => void;
+  onNavigateTab?: (tabId: string) => void;
 }
 
 export const MatchDetailPage: React.FC<MatchDetailPageProps> = ({
@@ -32,6 +41,7 @@ export const MatchDetailPage: React.FC<MatchDetailPageProps> = ({
   onSendToAnalyzer,
   isTracked,
   onUpdateSportsbookLine,
+  onNavigateTab,
 }) => {
   const away = useMemo(() => getTeamProfile(match.awayTeam), [match.awayTeam]);
   const home = useMemo(() => getTeamProfile(match.homeTeam), [match.homeTeam]);
@@ -40,6 +50,59 @@ export const MatchDetailPage: React.FC<MatchDetailPageProps> = ({
   const [currentLine, setCurrentLine] = useState<number>(match.sportsbookLine);
   const [newsArticles, setNewsArticles] = useState<NBANewsArticle[]>([]);
   const [isLoadingNews, setIsLoadingNews] = useState<boolean>(true);
+  const [isFavorite, setIsFavorite] = useState<boolean>(() => favoritesService.isMatchFavorite(match.id));
+  const [isCopied, setIsCopied] = useState<boolean>(false);
+
+  // Track deep matchup view in GA4 on mount
+  useEffect(() => {
+    analytics.trackGameDetailsView(
+      match.id,
+      `${match.awayTeam} @ ${match.homeTeam}`,
+      match.date
+    );
+  }, [match.id, match.awayTeam, match.homeTeam, match.date]);
+
+  // Sync favorites service
+  const handleToggleFavorite = () => {
+    const updated = favoritesService.toggleMatchFavorite(match.id);
+    setIsFavorite(updated);
+    analytics.trackEvent(updated ? 'favorite_add' : 'favorite_remove', {
+      game_id: match.id,
+      matchup: `${match.awayTeam} @ ${match.homeTeam}`,
+    });
+  };
+
+  // Handle share (Web Share API with copy-link fallback)
+  const handleShareMatchup = async () => {
+    const shareUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/?tab=picks&game=${match.id}`
+      : `https://nbatotals.com/?tab=picks&game=${match.id}`;
+    const shareTitle = `${match.awayTeam} @ ${match.homeTeam} — NBA Totals Over/Under Forecast`;
+    const shareText = `Check out the quantitative model forecast for ${match.awayTeam} @ ${match.homeTeam} on NBATotals.com. Fair Total: ${match.modelProjectedTotal.toFixed(1)}, Book: ${currentLine.toFixed(1)}.`;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        analytics.trackShare('game', `${match.awayTeam} @ ${match.homeTeam}`, 'web_share_api');
+        return;
+      } catch (err) {
+        // Fallback to clipboard if share cancelled/unsupported
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setIsCopied(true);
+      analytics.trackShare('game', `${match.awayTeam} @ ${match.homeTeam}`, 'clipboard_copy');
+      setTimeout(() => setIsCopied(false), 3000);
+    } catch {
+      // Ignore
+    }
+  };
 
   // Synchronize when match line changes
   useEffect(() => {
@@ -104,10 +167,36 @@ export const MatchDetailPage: React.FC<MatchDetailPageProps> = ({
           <span>Back to Match Slate</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-zinc-400">
-          <span>Match ID: #{match.id.replace('upc_', '')}</span>
-          <span>•</span>
-          <span className="text-slate-700 dark:text-zinc-300">{match.date}</span>
+        <div className="flex items-center gap-2">
+          {/* Favorite Toggle */}
+          <button
+            onClick={handleToggleFavorite}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
+              isFavorite
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
+                : 'bg-white dark:bg-[#0f1422] border-slate-200 dark:border-[#1c2438] text-slate-600 dark:text-zinc-400 hover:text-amber-500'
+            }`}
+            title={isFavorite ? 'Saved to Favorites' : 'Save to Favorites'}
+          >
+            <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-amber-500 text-amber-500' : ''}`} />
+            <span className="hidden sm:inline">{isFavorite ? 'Saved' : 'Favorite'}</span>
+          </button>
+
+          {/* Share Button */}
+          <button
+            onClick={handleShareMatchup}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-[#1c2438] hover:border-blue-400 text-slate-700 dark:text-zinc-300 hover:text-blue-600 dark:hover:text-cyan-400 text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+            title="Share this matchup"
+          >
+            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{isCopied ? 'Link Copied!' : 'Share'}</span>
+          </button>
+
+          <div className="hidden md:flex items-center gap-1.5 text-xs font-mono text-slate-500 dark:text-zinc-400 pl-2 border-l border-slate-200 dark:border-slate-800">
+            <span>#{match.id.replace('upc_', '')}</span>
+            <span>•</span>
+            <span className="text-slate-700 dark:text-zinc-300">{match.date}</span>
+          </div>
         </div>
       </div>
 
@@ -514,6 +603,120 @@ export const MatchDetailPage: React.FC<MatchDetailPageProps> = ({
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Explore More NBA Analysis Contextual Discovery */}
+      <div className="bg-white dark:bg-[#0c1220] border border-slate-200 dark:border-[#1c2438] rounded-2xl p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-zinc-100 uppercase tracking-wider">
+              Explore More NBA Analysis for this Game
+            </h3>
+          </div>
+          <span className="text-xs text-slate-500 font-mono">Related Tools</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* 1. Player Props */}
+          <button
+            onClick={() => {
+              analytics.trackCtaClick('explore_player_props', 'match_detail_related', 'player-props');
+              if (onNavigateTab) onNavigateTab('player-props');
+              else onBack();
+            }}
+            className="text-left p-4 rounded-xl bg-slate-50 dark:bg-[#070b14] hover:bg-purple-500/10 border border-slate-200 dark:border-[#182133] hover:border-purple-500/40 transition-all group cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 w-fit mb-2 group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
+                Player Props &amp; Edges
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 line-clamp-2">
+                Projected points, Over/Under edges, and full rosters for {away.shortName} &amp; {home.shortName}.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 mt-3 flex items-center gap-1">
+              View Player Props &rarr;
+            </span>
+          </button>
+
+          {/* 2. Matchup Simulator */}
+          <button
+            onClick={() => {
+              analytics.trackCtaClick('open_in_analyzer', 'match_detail_related', 'analyzer');
+              onSendToAnalyzer(match);
+            }}
+            className="text-left p-4 rounded-xl bg-slate-50 dark:bg-[#070b14] hover:bg-blue-500/10 border border-slate-200 dark:border-[#182133] hover:border-blue-500/40 transition-all group cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-cyan-400 w-fit mb-2 group-hover:scale-105 transition-transform">
+                <Sliders className="w-4 h-4" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-cyan-300 transition-colors">
+                Run Simulation
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 line-clamp-2">
+                Adjust pace sliders, test custom totals lines, and simulate quarter distribution.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-blue-600 dark:text-cyan-400 mt-3 flex items-center gap-1">
+              Open Simulator &rarr;
+            </span>
+          </button>
+
+          {/* 3. Strategy Academy */}
+          <button
+            onClick={() => {
+              analytics.trackCtaClick('learn_methodology', 'match_detail_related', 'academy');
+              if (onNavigateTab) onNavigateTab('academy');
+              else onBack();
+            }}
+            className="text-left p-4 rounded-xl bg-slate-50 dark:bg-[#070b14] hover:bg-emerald-500/10 border border-slate-200 dark:border-[#182133] hover:border-emerald-500/40 transition-all group cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 w-fit mb-2 group-hover:scale-105 transition-transform">
+                <GraduationCap className="w-4 h-4" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
+                Model Methodology
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 line-clamp-2">
+                Learn the Rule of 47 pace floor formula and why sub-47 quarters go Under at 85.2%.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-3 flex items-center gap-1">
+              Learn Strategy &rarr;
+            </span>
+          </button>
+
+          {/* 4. Model Track Record */}
+          <button
+            onClick={() => {
+              analytics.trackCtaClick('view_track_record', 'match_detail_related', 'results');
+              if (onNavigateTab) onNavigateTab('results');
+              else onBack();
+            }}
+            className="text-left p-4 rounded-xl bg-slate-50 dark:bg-[#070b14] hover:bg-amber-500/10 border border-slate-200 dark:border-[#182133] hover:border-amber-500/40 transition-all group cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 w-fit mb-2 group-hover:scale-105 transition-transform">
+                <BarChart3 className="w-4 h-4" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
+                Model Correctness
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 line-clamp-2">
+                Audit 2026–27 graded results and 5-season historical performance statistics.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-3 flex items-center gap-1">
+              View Graded Picks &rarr;
+            </span>
+          </button>
         </div>
       </div>
     </div>

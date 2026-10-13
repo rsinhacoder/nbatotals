@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Users,
   Smartphone,
+  Activity,
 } from 'lucide-react';
 import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -252,6 +253,14 @@ export const Header: React.FC<HeaderProps> = ({
             id: 'academy',
             label: 'Strategy Academy',
             icon: GraduationCap,
+          },
+          {
+            id: 'analytics',
+            label: 'Analytics & QA',
+            icon: Activity,
+            badge: 'GA4',
+            badgeColor:
+              'bg-cyan-50 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
           },
         ];
 
