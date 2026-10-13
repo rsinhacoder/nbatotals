@@ -10,6 +10,7 @@ import type {
 import { generatePlayerPropForecast } from '../utils/playerPropsEngine';
 import { INITIAL_UPCOMING_MATCHES } from '../data/upcomingGames';
 import { getAllPlayerProfiles, NBA_PLAYER_PROFILES } from '../data/nbaPlayerBaselines';
+import { nbaDateService } from '../utils/nbaDateService';
 
 // Canonical NBA Teams Mapping
 export interface NBATeamMeta {
@@ -3333,13 +3334,65 @@ class NBARosterService {
             }
           });
 
-          baseRoster = baseRoster.map((player) => {
-            const inj = injuryMap.get(player.id) || injuryMap.get(player.name.toLowerCase());
-            if (inj) {
-              return { ...player, injuryStatus: inj.status, injuryNote: inj.note };
-            }
-            return player;
-          });
+          // If team is not in verified offline repository, upgrade placeholder depth chart with real athletes from ESPN
+          const hasVerifiedOffline = !!VERIFIED_OFFLINE_ROSTERS[meta.abbrev];
+          if (!hasVerifiedOffline && athletes.length > 0) {
+            const realProfiles: NBAPlayerProfile[] = athletes.map((ath: any, idx: number) => {
+              const isStarter = idx < 5;
+              const role: PlayerRole = isStarter ? 'Starter' : idx < 10 ? 'Bench' : 'Reserve';
+              const expMin = isStarter
+                ? Number((31.5 - idx * 1.5).toFixed(1))
+                : idx < 10
+                ? Number((18.5 - (idx - 5) * 1.2).toFixed(1))
+                : 8.0;
+              const ppg = isStarter
+                ? Number((21.0 - idx * 2.5).toFixed(1))
+                : idx < 10
+                ? Number((10.5 - (idx - 5) * 1.2).toFixed(1))
+                : 4.5;
+              const inj = injuryMap.get(String(ath.id)) || injuryMap.get((ath.displayName || '').toLowerCase());
+
+              return {
+                id: String(ath.id),
+                name: ath.displayName || ath.fullName || `${meta.city} Player #${idx + 1}`,
+                team: meta.abbrev,
+                teamId: meta.id,
+                teamName: meta.name,
+                position: ath.position?.abbreviation || 'G',
+                jersey: ath.jersey || String(((idx + 1) * 3) % 99),
+                role,
+                isStarter,
+                expectedMinutes: expMin,
+                seasonPpg: ppg,
+                seasonMinutes: expMin,
+                last5Ppg: Number((ppg * 1.05).toFixed(1)),
+                last10Ppg: ppg,
+                last5Minutes: expMin,
+                last10Minutes: expMin,
+                q1Ppg: Number((ppg * 0.25).toFixed(1)),
+                q1Minutes: Number((expMin * 0.25).toFixed(1)),
+                fgaPer36: isStarter ? 16.5 : 12.0,
+                threePaPer36: 5.5,
+                ftaPer36: 4.2,
+                usageRate: isStarter ? 25.0 : 17.5,
+                trueShootingPct: 56.5,
+                injuryStatus: inj?.status || 'ACTIVE',
+                injuryNote: inj?.note,
+                restDays: 1,
+              };
+            });
+
+            baseRoster = padRosterToFullDepth(realProfiles, meta, 15);
+          } else {
+            // Apply live injury statuses to verified baseline
+            baseRoster = baseRoster.map((player) => {
+              const inj = injuryMap.get(player.id) || injuryMap.get(player.name.toLowerCase());
+              if (inj) {
+                return { ...player, injuryStatus: inj.status, injuryNote: inj.note };
+              }
+              return player;
+            });
+          }
         }
       }
     } catch (e) {
@@ -3365,32 +3418,38 @@ class NBARosterService {
       if (res.ok) {
         const data = await res.json();
         const events = data.events || [];
-        if (Array.isArray(events) && events.length > 0) {
-          return events.map((ev: any) => {
-            const comp = ev.competitions?.[0];
-            const away = comp?.competitors?.find((c: any) => c.homeAway === 'away');
-            const home = comp?.competitors?.find((c: any) => c.homeAway === 'home');
+        if (Array.isArray(events)) {
+          if (events.length > 0) {
+            return events.map((ev: any) => {
+              const comp = ev.competitions?.[0];
+              const away = comp?.competitors?.find((c: any) => c.homeAway === 'away');
+              const home = comp?.competitors?.find((c: any) => c.homeAway === 'home');
 
-            const awayMeta = resolveTeamMeta(away?.team?.abbreviation || away?.team?.displayName);
-            const homeMeta = resolveTeamMeta(home?.team?.abbreviation || home?.team?.displayName);
+              const awayMeta = resolveTeamMeta(away?.team?.abbreviation || away?.team?.displayName);
+              const homeMeta = resolveTeamMeta(home?.team?.abbreviation || home?.team?.displayName);
 
-            return {
-              id: ev.id,
-              date: dateStr,
-              time: ev.status?.type?.detail || 'Scheduled',
-              status: ev.status?.type?.state === 'in' ? 'Live' : ev.status?.type?.completed ? 'Final' : 'Scheduled',
-              awayTeam: awayMeta.name,
-              homeTeam: homeMeta.name,
-              awayTeamId: awayMeta.id,
-              homeTeamId: homeMeta.id,
-              awayAbbrev: awayMeta.abbrev,
-              homeAbbrev: homeMeta.abbrev,
-              awayRecord: away?.records?.[0]?.summary || '',
-              homeRecord: home?.records?.[0]?.summary || '',
-              sportsbookLine: comp?.odds?.[0]?.overUnder || 224.5,
-              gameStartTime: ev.date,
-            };
-          });
+              return {
+                id: ev.id,
+                date: dateStr,
+                time: ev.status?.type?.detail || 'Scheduled',
+                status: ev.status?.type?.state === 'in' ? 'Live' : ev.status?.type?.completed ? 'Final' : 'Scheduled',
+                awayTeam: awayMeta.name,
+                homeTeam: homeMeta.name,
+                awayTeamId: awayMeta.id,
+                homeTeamId: homeMeta.id,
+                awayAbbrev: awayMeta.abbrev,
+                homeAbbrev: homeMeta.abbrev,
+                awayRecord: away?.records?.[0]?.summary || '',
+                homeRecord: home?.records?.[0]?.summary || '',
+                sportsbookLine: comp?.odds?.[0]?.overUnder || 224.5,
+                gameStartTime: ev.date,
+              };
+            });
+          } else {
+            // ESPN returned empty slate (no games scheduled on this date)
+            const fallbackMatches = INITIAL_UPCOMING_MATCHES.filter((g) => g.date === dateStr);
+            return fallbackMatches;
+          }
         }
       }
     } catch (e) {
@@ -3399,7 +3458,7 @@ class NBARosterService {
 
     // Filter verified matches
     const filtered = INITIAL_UPCOMING_MATCHES.filter((g) => g.date === dateStr);
-    return filtered.length > 0 ? filtered : INITIAL_UPCOMING_MATCHES.slice(0, 5);
+    return filtered.length > 0 ? filtered : [];
   }
 
   /**
@@ -3407,14 +3466,15 @@ class NBARosterService {
    * Roster generation is completely independent of sportsbook odds availability.
    */
   public async generateScheduleDrivenRosters(
-    targetDateStr: string = '2026-10-12',
+    targetDateStr?: string,
     rawMarkets: PlayerPropsMarket[] = []
   ): Promise<{
     groupedGames: ScheduledGameWithRosters[];
     allForecasts: PlayerPropsForecast[];
     metrics: RosterCoverageMetrics;
   }> {
-    const rawGames = await this.fetchScheduleForDate(targetDateStr);
+    const effectiveDate = targetDateStr || nbaDateService.getTodayEasternDate();
+    const rawGames = await this.fetchScheduleForDate(effectiveDate);
     const groupedGames: ScheduledGameWithRosters[] = [];
     const allForecasts: PlayerPropsForecast[] = [];
 

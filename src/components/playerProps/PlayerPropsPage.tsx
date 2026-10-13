@@ -41,6 +41,7 @@ import { sportsbookOddsService } from '../../services/sportsbookOddsService';
 import { nbaRosterService } from '../../services/nbaRosterService';
 import type { TrackedBet, UpcomingMatch } from '../../types/nba';
 import { analytics } from '../../utils/analytics';
+import { nbaDateService } from '../../utils/nbaDateService';
 
 interface PlayerPropsPageProps {
   upcomingMatches?: UpcomingMatch[];
@@ -68,8 +69,8 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
   const [selectedGameFilter, setSelectedGameFilter] = useState<string>('ALL');
   const [minEdgeFilter, setMinEdgeFilter] = useState<number>(0);
 
-  // Date selection
-  const [selectedDate, setSelectedDate] = useState<string>('2026-10-12');
+  // Date selection - synchronized dynamically with real NBA calendar
+  const [selectedDate, setSelectedDate] = useState<string>(() => nbaDateService.getTodayEasternDate());
 
   // Loading states
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -100,18 +101,11 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
   // Expanded Game IDs set
   const [expandedGameIds, setExpandedGameIds] = useState<Set<string>>(new Set());
 
-  // Available dates for schedule selector
-  const availableDates = [
-    { label: "Today (Oct 12)", value: '2026-10-12' },
-    { label: "Tomorrow (Oct 13)", value: '2026-10-13' },
-    { label: "Wed, Oct 14", value: '2026-10-14' },
-    { label: "Thu, Oct 15", value: '2026-10-15' },
-    { label: "Sun, Oct 11", value: '2026-10-11' },
-    { label: "Sat, Oct 10", value: '2026-10-10' },
-    { label: "Fri, Oct 09", value: '2026-10-09' },
-    { label: "Thu, Oct 08", value: '2026-10-08' },
-    { label: "All Scheduled Games", value: 'ALL' },
-  ];
+  // Available dates dynamically resolved from real-time calendar and active schedule
+  const availableDates = useMemo(() => {
+    const existingDates = upcomingMatches.map((m) => m.date);
+    return nbaDateService.getAvailableScheduleDates({ existingDates });
+  }, [upcomingMatches]);
 
   // Refresh and load pipeline
   const loadScheduleAndRosters = async () => {
@@ -429,8 +423,19 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
                 <span className="text-xs font-bold text-slate-500">Slate Date:</span>
                 <select
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="text-xs font-bold py-1.5 px-3 rounded-lg bg-slate-50 dark:bg-[#121b2d] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setSelectedDate(newDate);
+                    analytics.trackGameDateChange(
+                      newDate,
+                      newDate === nbaDateService.getTodayEasternDate()
+                        ? 'today'
+                        : newDate === nbaDateService.getTomorrowEasternDate()
+                        ? 'tomorrow'
+                        : 'custom'
+                    );
+                  }}
+                  className="text-xs font-bold py-1.5 px-3 rounded-lg bg-slate-50 dark:bg-[#121b2d] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   {availableDates.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -630,6 +635,32 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
           {/* VIEW MODE 1: GROUPED BY GAME (Primary Organized View) */}
           {viewMode === 'grouped' && (
             <div className="space-y-6">
+              {groupedGames.length === 0 && !isRefreshing && (
+                <div className="text-center py-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1322] shadow-sm">
+                  <Calendar className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                  <h3 className="text-base font-bold text-slate-800 dark:text-white mb-1">
+                    No Scheduled NBA Games Found for {nbaDateService.formatScheduleDateLabel(selectedDate)}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-4">
+                    There are no games scheduled for this date on the NBA calendar, or games have not been posted yet.
+                  </p>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={() => setSelectedDate(nbaDateService.getTodayEasternDate())}
+                      className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                    >
+                      View Today's Slate
+                    </button>
+                    <button
+                      onClick={() => setSelectedDate('ALL')}
+                      className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    >
+                      View All Scheduled Games
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {groupedGames.map((game) => {
                 const isExpanded = expandedGameIds.has(game.id);
 

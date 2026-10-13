@@ -22,6 +22,7 @@ import { nbaRosterService } from './services/nbaRosterService';
 import { DEFAULT_OPENING_CONSENSUS_MARKETS } from './services/sportsbookOddsService';
 import { AnalyticsDashboardTab } from './components/AnalyticsDashboardTab';
 import { analytics } from './utils/analytics';
+import { nbaDateService } from './utils/nbaDateService';
 import type { PlayerPropsForecast } from './types/playerProps';
 
 import { INITIAL_NBA_GAMES, INITIAL_REFERENCE_TOTALS } from './data/mockGames';
@@ -274,7 +275,7 @@ export function App() {
 
   useEffect(() => {
     nbaRosterService
-      .generateScheduleDrivenRosters('2026-10-12', DEFAULT_OPENING_CONSENSUS_MARKETS)
+      .generateScheduleDrivenRosters(nbaDateService.getTodayEasternDate(), DEFAULT_OPENING_CONSENSUS_MARKETS)
       .then((res) => setPlayerPropsForecasts(res.allForecasts))
       .catch(console.warn);
   }, []);

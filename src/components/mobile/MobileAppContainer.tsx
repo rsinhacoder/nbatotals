@@ -14,6 +14,7 @@ import type { PlayerPropsForecast, OddsFormat } from '../../types/playerProps';
 import type { ModelConfig } from '../../utils/modelConstants';
 import { initializeNativeAndroid } from '../../utils/capacitorApp';
 import { analytics } from '../../utils/analytics';
+import { nbaDateService } from '../../utils/nbaDateService';
 
 interface MobileAppContainerProps {
   upcomingMatches: UpcomingMatch[];
@@ -49,7 +50,7 @@ export const MobileAppContainer: React.FC<MobileAppContainerProps> = ({
   onToggleDesktopMode,
 }) => {
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
-  const [selectedDate, setSelectedDate] = useState<string>('2026-10-12');
+  const [selectedDate, setSelectedDate] = useState<string>(() => nbaDateService.getTodayEasternDate());
   const [oddsFormat, setOddsFormat] = useState<OddsFormat>('AMERICAN');
 
   // Modals
@@ -57,16 +58,11 @@ export const MobileAppContainer: React.FC<MobileAppContainerProps> = ({
   const [selectedPlayerDetail, setSelectedPlayerDetail] = useState<PlayerPropsForecast | null>(null);
   const [isOddsSettingsOpen, setIsOddsSettingsOpen] = useState(false);
 
-  // Available dates for schedule selector
-  const availableDates = [
-    { label: 'Today (Oct 12)', value: '2026-10-12' },
-    { label: 'Tomorrow (Oct 13)', value: '2026-10-13' },
-    { label: 'Wed, Oct 14', value: '2026-10-14' },
-    { label: 'Thu, Oct 15', value: '2026-10-15' },
-    { label: 'Sun, Oct 11', value: '2026-10-11' },
-    { label: 'Sat, Oct 10', value: '2026-10-10' },
-    { label: 'All Games', value: 'ALL' },
-  ];
+  // Available dates for schedule selector synced with real-time NBA schedule
+  const availableDates = React.useMemo(() => {
+    const existingDates = upcomingMatches.map((m) => m.date);
+    return nbaDateService.getAvailableScheduleDates({ existingDates });
+  }, [upcomingMatches]);
 
   // Track mobile screen view in GA4
   useEffect(() => {
