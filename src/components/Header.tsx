@@ -17,13 +17,14 @@ import {
   Activity,
   FileText,
   Compass,
+  Sparkles,
 } from 'lucide-react';
 import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 interface HeaderProps {
-  currentSport: 'nba' | 'nhl' | 'khl';
-  onSelectSport: (sport: 'nba' | 'nhl' | 'khl') => void;
+  currentSport: 'nba' | 'nhl' | 'khl' | 'football';
+  onSelectSport: (sport: 'nba' | 'nhl' | 'khl' | 'football') => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onOpenSync: () => void;
@@ -205,12 +206,52 @@ export const Header: React.FC<HeaderProps> = ({
             icon: GraduationCap,
           },
         ]
+      : currentSport === 'football'
+      ? [
+          {
+            id: 'football-throw-ins',
+            label: 'Throw-In Scanner',
+            icon: Sparkles,
+            badge: 'UNDER 40.5',
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
+            id: 'results',
+            label: 'Model Correctness',
+            icon: CheckCircle2,
+            badge: currentSeasonPicksCount ? `${currentSeasonPicksCount} Graded` : '2026–27 Season',
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
+            id: 'tracker',
+            label: 'Bet Tracker',
+            icon: BookmarkCheck,
+            badge: trackedBetsCount > 0 ? String(trackedBetsCount) : undefined,
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
+            id: 'academy',
+            label: 'Strategy Academy',
+            icon: GraduationCap,
+          },
+        ]
       : [
           {
             id: 'previews',
             label: 'Game Previews',
             icon: FileText,
             badge: upcomingCount > 0 ? `${upcomingCount} Slate` : 'DAILY',
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
+            id: 'football-throw-ins',
+            label: 'Throw-In Scanner',
+            icon: Sparkles,
+            badge: 'SOCCER',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },
@@ -304,13 +345,15 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Brand Title */}
             <div className="flex items-center gap-1.5 shrink-0">
               <h1 className="text-base sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1 whitespace-nowrap">
-                <span>{currentSport === 'khl' ? 'KHL' : currentSport === 'nhl' ? 'NHL' : 'NBA'}</span>
+                <span>{currentSport === 'khl' ? 'KHL' : currentSport === 'nhl' ? 'NHL' : currentSport === 'football' ? 'FOOTBALL' : 'NBA'}</span>
                 <span
                   className={
                     currentSport === 'khl'
                       ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-400 bg-clip-text text-transparent'
                       : currentSport === 'nhl'
                       ? 'bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-400 bg-clip-text text-transparent'
+                      : currentSport === 'football'
+                      ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent'
                       : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent'
                   }
                 >
@@ -319,7 +362,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden sm:inline">.com</span>
               </h1>
               <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
-                {currentSport === 'khl' ? 'KHL POISSON' : currentSport === 'nhl' ? 'POISSON EDGE' : 'QUANT PRO'}
+                {currentSport === 'khl' ? 'KHL POISSON' : currentSport === 'nhl' ? 'POISSON EDGE' : currentSport === 'football' ? 'UNDER 40.5' : 'QUANT PRO'}
               </span>
             </div>
           </div>
@@ -329,7 +372,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 onSelectSport('nba');
-                if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-')) setActiveTab('previews');
+                if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-') || activeTab === 'football-throw-ins') setActiveTab('previews');
               }}
               className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 currentSport === 'nba'
@@ -381,6 +424,20 @@ export const Header: React.FC<HeaderProps> = ({
                   {khlUpcomingCount}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => {
+                onSelectSport('football');
+                setActiveTab('football-throw-ins');
+              }}
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                currentSport === 'football'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>⚽</span>
+              <span className="font-extrabold">SOCCER</span>
             </button>
           </div>
         </div>

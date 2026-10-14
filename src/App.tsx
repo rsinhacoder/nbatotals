@@ -24,6 +24,7 @@ import { AnalyticsDashboardTab } from './components/AnalyticsDashboardTab';
 import { PreviewsHubTab } from './components/content/PreviewsHubTab';
 import { ArticleDetailPage } from './components/content/ArticleDetailPage';
 import { ContentPerformanceTab } from './components/content/ContentPerformanceTab';
+import { FootballThrowInScannerTab } from './components/football/FootballThrowInScannerTab';
 import { nbaContentEngine } from './services/nbaContentEngine';
 import type { NBAArticle } from './types/content';
 import { analytics } from './utils/analytics';
@@ -158,6 +159,7 @@ export function App() {
       'khl-picks': 'KHL Edge Board — Kontinental Hockey League Totals',
       'khl-analyzer': 'KHL Matchup Analyzer — Continental Hockey Forecaster',
       'khl-stats': 'KHL 5-Season Historical Study — Empirical Totals Dataset',
+      'football-throw-ins': 'Football Throw-In Edge Scanner — Under 40.5 Predictions & Analysis — NBATotals.com',
     };
 
     const newTitle = titles[activeTab] || 'NBA Totals — Quantitative Sports Analytics';
@@ -356,21 +358,23 @@ export function App() {
     lowestQ: 41.5,
   });
 
-  // Selected Sport: 'nba' | 'nhl' | 'khl'
-  const [currentSport, setCurrentSport] = useState<'nba' | 'nhl' | 'khl'>(() => {
+  // Selected Sport: 'nba' | 'nhl' | 'khl' | 'football'
+  const [currentSport, setCurrentSport] = useState<'nba' | 'nhl' | 'khl' | 'football'>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_SPORT);
-      if (saved === 'nba' || saved === 'nhl' || saved === 'khl') return saved;
+      if (saved === 'nba' || saved === 'nhl' || saved === 'khl' || saved === 'football') return saved;
     } catch (e) {}
     return 'nba';
   });
 
-  const handleSelectSport = (sport: 'nba' | 'nhl' | 'khl') => {
+  const handleSelectSport = (sport: 'nba' | 'nhl' | 'khl' | 'football') => {
     setCurrentSport(sport);
     try {
       localStorage.setItem(STORAGE_KEY_SPORT, sport);
     } catch (e) {}
-    if (sport === 'khl') {
+    if (sport === 'football') {
+      setActiveTab('football-throw-ins');
+    } else if (sport === 'khl') {
       if (!activeTab.startsWith('khl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
         setActiveTab('khl-picks');
       }
@@ -379,7 +383,7 @@ export function App() {
         setActiveTab('nhl-picks');
       }
     } else {
-      if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-')) {
+      if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-') || activeTab === 'football-throw-ins') {
         setActiveTab('previews');
       }
     }
@@ -1180,8 +1184,8 @@ export function App() {
         {/* Universal Model Correctness & Performance Ledger (2024–25 Current Season) */}
         {activeTab === 'results' && (
           <ModelResultsTab
-            currentSport={currentSport}
-            onSelectSport={handleSelectSport}
+            currentSport={currentSport === 'football' ? 'nba' : currentSport}
+            onSelectSport={(s) => handleSelectSport(s)}
             historicalGames={processedGames}
             picks2026_27={picks2026_27}
             onSyncGameResults={handleSyncGameResults}
@@ -1319,6 +1323,11 @@ export function App() {
             }}
           />
         )}
+
+        {/* Football Tab: Throw-In Edge Scanner Under 40.5 */}
+        {activeTab === 'football-throw-ins' && (
+          <FootballThrowInScannerTab />
+        )}
       </main>
 
       {/* Floating Toast Notification Container */}
@@ -1418,6 +1427,11 @@ export function App() {
                 <li>
                   <button onClick={() => setActiveTab('analytics')} className="hover:text-blue-600 dark:hover:text-cyan-400 cursor-pointer font-semibold text-cyan-500">
                     GA4 &amp; Engagement Dashboard
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => { setActiveTab('football-throw-ins'); handleSelectSport('football'); }} className="hover:text-emerald-400 cursor-pointer font-bold text-emerald-500">
+                    ⚽ Football Throw-Ins Under 40.5 Scanner
                   </button>
                 </li>
                 <li>
