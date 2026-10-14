@@ -19,8 +19,8 @@ import type {
 import { nbaDateService } from '../utils/nbaDateService';
 import { NBA_TEAMS_META, resolveTeamMeta } from './nbaRosterService';
 
-const STORAGE_KEY_ARTICLES = 'nbatotals_published_articles_v1';
-const STORAGE_KEY_PERF = 'nbatotals_content_performance_v1';
+const STORAGE_KEY_ARTICLES = 'nbatotals_published_articles_v2';
+const STORAGE_KEY_PERF = 'nbatotals_content_performance_v2';
 
 /**
  * High-value curated seed articles covering Evergreen Guides,
@@ -110,7 +110,7 @@ $$\\hat{y} = 119.56 + 2.3621 \\times (\\text{Projected Lowest Quarter Score})$$
         level: 2,
         content: `A model projection is only actionable when contrasted with current sportsbook odds. When our model projects an expected game total of **217.2 points** and consensus sportsbooks post a line of **224.5 points**, the resulting **$+7.3$ point edge on the UNDER** represents an actionable mathematical discrepancy.
 
-Visitors can track these live daily discrepancies directly on our **[Daily NBA Picks Board](file:///c:/Users/Rishabh%20Sinha/Documents/antigravity/sharp-pascal/?tab=picks)**, simulate custom pace scenarios with our **[Matchup Analyzer](file:///c:/Users/Rishabh%20Sinha/Documents/antigravity/sharp-pascal/?tab=analyzer)**, and evaluate starting rotation point props on our **[Player Props Board](file:///c:/Users/Rishabh%20Sinha/Documents/antigravity/sharp-pascal/?tab=player-props)**.`,
+Visitors can track these live daily discrepancies directly on our **[Daily NBA Picks Board](/?tab=picks)**, simulate custom pace scenarios with our **[Matchup Analyzer](/?tab=analyzer)**, and evaluate starting rotation point props on our **[Player Props Board](/?tab=player-props)**.`,
       },
     ],
     faq: [
@@ -252,7 +252,7 @@ The statistical significance is overwhelming ($p < 0.0001$). A single quarter di
         content: `How can sports analytics readers leverage this finding?
 - **Pre-Game Total Forecasting:** Identify matchups where either team's bench ranking projects a high probability of an offensive drought ($Q_{\\text{low}} < 47$).
 - **Live In-Play Analysis:** If the 1st or 2nd quarter of an ongoing game finishes at 45 or 46 points and live sportsbook totals remain elevated at 225+, the Under probability skyrockets to over 80%.
-- Review our graded historical ledger on the **[Model Correctness Page](file:///c:/Users/Rishabh%20Sinha/Documents/antigravity/sharp-pascal/?tab=results)** to see real-world performance.`,
+- Review our graded historical ledger on the **[Model Correctness Page](/?tab=results)** to see real-world performance.`,
       },
     ],
     faq: [
@@ -370,7 +370,7 @@ Against a consensus sportsbook line of **24.5 points (-115 Over / -105 Under)**:
 - **Fair American Odds:** -140
 - **Model Recommendation:** **OVER EDGE**
 
-Visitors can evaluate live updates for Wembanyama and all 15 Spurs roster players on our **[NBA Player Props Engine](file:///c:/Users/Rishabh%20Sinha/Documents/antigravity/sharp-pascal/?tab=player-props)**.`,
+Visitors can evaluate live updates for Wembanyama and all 15 Spurs roster players on our **[NBA Player Props Engine](/?tab=player-props)**.`,
       },
     ],
     faq: [
@@ -767,7 +767,7 @@ When these two tactical systems collide, the projected pace converges toward **9
 - **Fair Value Projected Line:** **${options.projectedTotal.toFixed(1)} Points**
 - **Actionable Point Discrepancy:** **${absEdge} Points**
 
-Track live line movement and sportsbook line shopping on our **[Daily NBA Picks Board](file:///c:/Users/Rishabh%20Sinha/Documents/antigravity/sharp-pascal/?tab=picks&game=${options.gameId})**, or explore all individual player point totals on the **[NBA Player Props Board](file:///c:/Users/Rishabh%20Sinha/Documents/antigravity/sharp-pascal/?tab=player-props)**.`,
+Track live line movement and sportsbook line shopping on our **[Daily NBA Picks Board](/?tab=picks&game=${options.gameId})**, or explore all individual player point totals on the **[NBA Player Props Board](/?tab=player-props)**.`,
       },
     ];
 

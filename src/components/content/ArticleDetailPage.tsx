@@ -21,6 +21,7 @@ import type { NBAArticle } from '../../types/content';
 import { nbaContentEngine } from '../../services/nbaContentEngine';
 import { analytics } from '../../utils/analytics';
 import { updateSEOHead, resetSEOHeadToDefault } from '../../utils/seoHead';
+import { ArticleContentRenderer, stripMarkdown } from './ArticleContentRenderer';
 
 interface ArticleDetailPageProps {
   article: NBAArticle;
@@ -144,7 +145,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
           </button>
           <span className="text-slate-400">/</span>
           <span className="truncate max-w-[280px] sm:max-w-md text-slate-700 dark:text-zinc-300">
-            {article.title}
+            {stripMarkdown(article.title)}
           </span>
         </div>
 
@@ -190,12 +191,12 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
 
         {/* Headline */}
         <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-          {article.title}
+          {stripMarkdown(article.title)}
         </h1>
 
         {/* Subtitle / Excerpt */}
         <p className="text-base sm:text-lg text-slate-600 dark:text-zinc-300 leading-relaxed font-normal">
-          {article.summary}
+          {stripMarkdown(article.summary)}
         </p>
 
         {/* Author / Quantitative Attribution */}
@@ -329,31 +330,36 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
             <section
               key={section.id}
               id={`section-${section.id}`}
-              className="scroll-mt-24 space-y-3"
+              className="scroll-mt-24 space-y-4"
             >
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
-                <span className="text-blue-600 dark:text-blue-400 font-mono text-base font-normal">0{idx + 1}.</span>
-                <span>{section.heading}</span>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2.5">
+                <span className="text-blue-600 dark:text-cyan-400 font-mono text-base font-normal">0{idx + 1}.</span>
+                <span>{stripMarkdown(section.heading)}</span>
               </h2>
 
-              <div className="text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed space-y-3 whitespace-pre-line font-normal">
-                {section.content}
-              </div>
+              <ArticleContentRenderer
+                content={section.content}
+                onNavigateTab={onNavigateTab}
+              />
 
               {/* Callout Box if present */}
               {section.callout && (
-                <div className={`p-4 rounded-xl border text-xs sm:text-sm my-3 ${
+                <div className={`p-4 sm:p-5 rounded-2xl border text-xs sm:text-sm my-4 shadow-xs ${
                   section.callout.type === 'STAT'
                     ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/60 text-blue-950 dark:text-blue-200'
                     : section.callout.type === 'WARNING'
                     ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/60 text-amber-950 dark:text-amber-200'
                     : 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60 text-emerald-950 dark:text-emerald-200'
                 }`}>
-                  <div className="font-bold flex items-center gap-1.5 mb-1">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>{section.callout.title}</span>
+                  <div className="font-bold flex items-center gap-1.5 mb-1.5 text-sm">
+                    <Sparkles className="w-4 h-4" />
+                    <span>{stripMarkdown(section.callout.title)}</span>
                   </div>
-                  <p className="leading-normal">{section.callout.content}</p>
+                  <ArticleContentRenderer
+                    content={section.callout.content}
+                    onNavigateTab={onNavigateTab}
+                    className="text-xs sm:text-sm !space-y-1.5 !leading-relaxed"
+                  />
                 </div>
               )}
             </section>
@@ -384,7 +390,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="font-extrabold text-slate-900 dark:text-white text-sm">
-                            {player.playerName}
+                            {stripMarkdown(player.playerName)}
                           </div>
                           <div className="text-xs text-slate-500 dark:text-zinc-400">
                             {player.team} • {player.position} ({player.role})
@@ -419,7 +425,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                       </div>
 
                       <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-                        {player.analysis}
+                        {stripMarkdown(player.analysis)}
                       </p>
                     </div>
                   );
@@ -466,12 +472,16 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                         onClick={() => toggleFaq(idx)}
                         className="w-full px-4 py-3 text-left font-semibold text-xs sm:text-sm text-slate-800 dark:text-zinc-200 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
                       >
-                        <span>{faqItem.question}</span>
+                        <span>{stripMarkdown(faqItem.question)}</span>
                         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                       </button>
                       {isOpen && (
                         <div className="px-4 pb-3.5 text-xs sm:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed border-t border-slate-100 dark:border-slate-800/60 pt-2.5">
-                          {faqItem.answer}
+                          <ArticleContentRenderer
+                            content={faqItem.answer}
+                            onNavigateTab={onNavigateTab}
+                            className="text-xs sm:text-sm !space-y-1.5 !leading-relaxed"
+                          />
                         </div>
                       )}
                     </div>
@@ -522,7 +532,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                       : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/40'
                   }`}
                 >
-                  {idx + 1}. {s.heading}
+                  {idx + 1}. {stripMarkdown(s.heading)}
                 </a>
               ))}
               {article.playerSpotlights && article.playerSpotlights.length > 0 && (
@@ -602,7 +612,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                       {rel.articleType.replace('_', ' ')}
                     </span>
                     <h4 className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                      {rel.title}
+                      {stripMarkdown(rel.title)}
                     </h4>
                     <span className="text-[10px] text-slate-400 block">
                       {rel.readingTimeMinutes} min read • {rel.publishedAt.slice(0, 10)}

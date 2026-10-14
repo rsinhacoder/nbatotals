@@ -21,6 +21,7 @@ import { nbaContentEngine } from '../../services/nbaContentEngine';
 import { analytics } from '../../utils/analytics';
 import { updateSEOHead } from '../../utils/seoHead';
 import { nbaDateService } from '../../utils/nbaDateService';
+import { stripMarkdown } from './ArticleContentRenderer';
 
 interface PreviewsHubTabProps {
   onSelectArticle: (article: NBAArticle) => void;
@@ -285,11 +286,11 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
               </div>
 
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white group-hover:text-blue-500 transition leading-snug">
-                {featuredArticle.title}
+                {stripMarkdown(featuredArticle.title)}
               </h2>
 
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">
-                {featuredArticle.summary}
+                {stripMarkdown(featuredArticle.summary)}
               </p>
             </div>
 
@@ -351,7 +352,7 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
 
                     {/* Title */}
                     <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-blue-500 transition line-clamp-2 leading-snug">
-                      {preview.title}
+                      {stripMarkdown(preview.title)}
                     </h3>
 
                     {/* Model Context Mini Box */}
@@ -380,7 +381,7 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
 
                     {/* Summary */}
                     <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                      {preview.summary}
+                      {stripMarkdown(preview.summary)}
                     </p>
                   </div>
 
@@ -446,11 +447,11 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
                     </div>
 
                     <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-purple-400 transition line-clamp-2 leading-snug">
-                      {guide.title}
+                      {stripMarkdown(guide.title)}
                     </h3>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">
-                      {guide.summary}
+                      {stripMarkdown(guide.summary)}
                     </p>
                   </div>
 

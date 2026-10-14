@@ -25,6 +25,7 @@ import {
 import type { NBAArticle, ContentStatus, ArticleType, KeywordOpportunity } from '../../types/content';
 import { nbaContentEngine } from '../../services/nbaContentEngine';
 import { analytics } from '../../utils/analytics';
+import { stripMarkdown } from './ArticleContentRenderer';
 
 interface ContentPerformanceTabProps {
   onSelectArticle: (article: NBAArticle) => void;
@@ -266,7 +267,7 @@ export const ContentPerformanceTab: React.FC<ContentPerformanceTabProps> = ({
                 className="p-3 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-white dark:bg-[#111726] text-xs space-y-1.5"
               >
                 <div className="font-bold text-slate-900 dark:text-white truncate">
-                  {art.title}
+                  {stripMarkdown(art.title)}
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center justify-between">
                   <span>Edge: <strong className="text-amber-600 dark:text-amber-400">{art.modelContext?.edgePoints ? Math.abs(art.modelContext.edgePoints).toFixed(1) : '0.0'} pts</strong></span>
@@ -377,7 +378,7 @@ export const ContentPerformanceTab: React.FC<ContentPerformanceTabProps> = ({
                           onClick={() => onSelectArticle(art)}
                           className="font-bold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-left line-clamp-1 cursor-pointer block"
                         >
-                          {art.title}
+                          {stripMarkdown(art.title)}
                         </button>
                         <span className="text-[10px] text-slate-400 font-mono truncate block mt-0.5">
                           /previews/{art.slug}
