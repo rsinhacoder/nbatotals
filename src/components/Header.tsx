@@ -15,6 +15,8 @@ import {
   Users,
   Smartphone,
   Activity,
+  FileText,
+  Compass,
 } from 'lucide-react';
 import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -250,6 +252,14 @@ export const Header: React.FC<HeaderProps> = ({
               'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
           },
           {
+            id: 'previews',
+            label: 'Game Previews',
+            icon: FileText,
+            badge: 'DAILY',
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
             id: 'academy',
             label: 'Strategy Academy',
             icon: GraduationCap,
@@ -261,6 +271,14 @@ export const Header: React.FC<HeaderProps> = ({
             badge: 'GA4',
             badgeColor:
               'bg-cyan-50 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+          },
+          {
+            id: 'content-perf',
+            label: 'SEO Dashboard',
+            icon: Compass,
+            badge: 'GSC',
+            badgeColor:
+              'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
           },
         ];
 

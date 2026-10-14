@@ -19,6 +19,14 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- NBA Game Previews & Analysis Editorial Hub -->
+  <url>
+    <loc>https://nbatotals.com/?tab=previews</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- NBA Player Props & Full Rosters Forecasting Engine -->
   <url>
     <loc>https://nbatotals.com/?tab=player-props</loc>
@@ -51,6 +59,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- Quantitative Strategy Academy & Rule of 47 Guide -->
+  <url>
+    <loc>https://nbatotals.com/?tab=academy</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Bet Portfolio & ROI Tracker -->
   <url>
     <loc>https://nbatotals.com/?tab=tracker</loc>
@@ -59,12 +75,68 @@
     <priority>0.7</priority>
   </url>
 
-  <!-- Quantitative Strategy Academy & Rule of 47 Guide -->
+  <!-- Daily Matchup Preview: Warriors vs Lakers -->
   <url>
-    <loc>https://nbatotals.com/?tab=academy</loc>
+    <loc>https://nbatotals.com/previews/warriors-vs-lakers-prediction-total-oct-13-2026</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Daily Matchup Preview: Cavaliers vs Magic -->
+  <url>
+    <loc>https://nbatotals.com/previews/cavaliers-vs-magic-prediction-total-oct-13-2026</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Daily Matchup Preview: Knicks vs Raptors -->
+  <url>
+    <loc>https://nbatotals.com/previews/knicks-vs-raptors-prediction-total-oct-13-2026</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Evergreen Guide: How NBA Game Totals Work -->
+  <url>
+    <loc>https://nbatotals.com/previews/how-nba-game-totals-work-mathematical-guide-pace-floors</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Empirical Study: Rule of 47 Statistical Proof across 6,000 Games -->
+  <url>
+    <loc>https://nbatotals.com/previews/rule-of-47-nba-totals-statistical-proof</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Player Analysis: Victor Wembanyama Scoring Props & Defensive Spacing -->
+  <url>
+    <loc>https://nbatotals.com/previews/victor-wembanyama-scoring-prop-projection-analysis</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+
+  <!-- Google Analytics 4 & User Engagement Dashboard -->
+  <url>
+    <loc>https://nbatotals.com/?tab=analytics</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Content Operations & Technical SEO Dashboard -->
+  <url>
+    <loc>https://nbatotals.com/?tab=content-perf</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
   </url>
 
   <!-- NHL Quantitative Edge Board -->

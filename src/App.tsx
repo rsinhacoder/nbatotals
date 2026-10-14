@@ -21,6 +21,11 @@ import { isNativePlatform } from './utils/capacitorApp';
 import { nbaRosterService } from './services/nbaRosterService';
 import { DEFAULT_OPENING_CONSENSUS_MARKETS } from './services/sportsbookOddsService';
 import { AnalyticsDashboardTab } from './components/AnalyticsDashboardTab';
+import { PreviewsHubTab } from './components/content/PreviewsHubTab';
+import { ArticleDetailPage } from './components/content/ArticleDetailPage';
+import { ContentPerformanceTab } from './components/content/ContentPerformanceTab';
+import { nbaContentEngine } from './services/nbaContentEngine';
+import type { NBAArticle } from './types/content';
 import { analytics } from './utils/analytics';
 import { nbaDateService } from './utils/nbaDateService';
 import type { PlayerPropsForecast } from './types/playerProps';
@@ -78,13 +83,31 @@ const STORAGE_KEY_KHL_UPCOMING = 'khl_quant_upcoming_v1';
 const STORAGE_KEY_2026_PICKS = 'nba_quant_graded_picks_2026_27_v5';
 
 export function App() {
-  // Navigation: 5 core human-centered tabs
-  // 'picks' | 'analyzer' | 'tracker' | 'trackrecord' | 'academy'
+  // Check initial slug from URL query or path
+  const [selectedArticle, setSelectedArticle] = useState<NBAArticle | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get('slug');
+      if (slug) {
+        return nbaContentEngine.getArticleBySlug(slug) || null;
+      }
+      const match = window.location.pathname.match(/^\/(?:previews|articles)\/([^/]+)/);
+      if (match && match[1]) {
+        return nbaContentEngine.getArticleBySlug(match[1]) || null;
+      }
+    }
+    return null;
+  });
+
+  // Navigation: 5 core human-centered tabs + SEO Previews & Dashboards
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
       if (tabParam) return tabParam;
+      if (window.location.pathname.startsWith('/previews') || window.location.pathname.startsWith('/articles')) {
+        return 'previews';
+      }
     }
     return 'picks';
   });
@@ -102,12 +125,17 @@ export function App() {
     analytics.init();
   }, []);
 
-  // Sync activeTab with browser URL search parameters and dynamic title
+  // Sync activeTab and selectedArticle with browser URL search parameters and dynamic title
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const url = new URL(window.location.href);
     url.searchParams.set('tab', activeTab);
+    if (activeTab === 'previews' && selectedArticle) {
+      url.searchParams.set('slug', selectedArticle.slug);
+    } else {
+      url.searchParams.delete('slug');
+    }
     window.history.replaceState({}, '', url.toString());
 
     // Dynamic Title Mapping for SEO & Analytics
@@ -120,6 +148,10 @@ export function App() {
       trackrecord: 'Track Record & Historical Database — 6,000 NBA Games Backtest',
       academy: 'Quantitative Strategy Academy — Rule of 47 Pace Floor Guide',
       analytics: 'Google Analytics 4 & Engagement Dashboard — NBATotals.com QA',
+      previews: selectedArticle
+        ? `${selectedArticle.title} — NBATotals.com`
+        : 'NBA Game Previews, Over/Under Predictions & Statistical Analysis — NBATotals.com',
+      'content-perf': 'NBA Content Performance & Technical SEO Dashboard — NBATotals.com',
       'nhl-picks': 'NHL Edge Board — Quantitative Hockey Totals Predictions',
       'nhl-analyzer': 'NHL Matchup Analyzer — Team Pace & Totals Simulator',
       'nhl-stats': 'NHL 5-Season Historical Study — 6,115 Completed Games',
@@ -132,8 +164,12 @@ export function App() {
     document.title = newTitle;
 
     // Track SPA page view in GA4
-    analytics.trackPageView(`/?tab=${activeTab}`, newTitle, activeTab);
-  }, [activeTab]);
+    analytics.trackPageView(
+      activeTab === 'previews' && selectedArticle ? `/previews/${selectedArticle.slug}` : `/?tab=${activeTab}`,
+      newTitle,
+      activeTab
+    );
+  }, [activeTab, selectedArticle]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -142,8 +178,15 @@ export function App() {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('tab') || 'picks';
+      const slug = params.get('slug');
       setActiveTab(tab);
       setUrlGameId(params.get('game'));
+      if (slug) {
+        const found = nbaContentEngine.getArticleBySlug(slug);
+        setSelectedArticle(found || null);
+      } else {
+        setSelectedArticle(null);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -1208,6 +1251,74 @@ export function App() {
             onNavigateTab={(tab) => setActiveTab(tab)}
           />
         )}
+
+        {/* NBA Tab: Game Previews & Analytical Matchup Breakdowns */}
+        {activeTab === 'previews' && (
+          selectedArticle ? (
+            <ArticleDetailPage
+              article={selectedArticle}
+              onBack={() => {
+                setSelectedArticle(null);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('slug');
+                  window.history.replaceState({}, '', url.toString());
+                }
+              }}
+              onNavigateTab={(tab, gameId) => {
+                setSelectedArticle(null);
+                if (gameId) setUrlGameId(gameId);
+                setActiveTab(tab);
+              }}
+              onSelectArticle={(art) => {
+                setSelectedArticle(art);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'previews');
+                  url.searchParams.set('slug', art.slug);
+                  window.history.pushState({}, '', url.toString());
+                }
+              }}
+            />
+          ) : (
+            <PreviewsHubTab
+              upcomingMatches={upcomingMatches}
+              onSelectArticle={(art) => {
+                setSelectedArticle(art);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'previews');
+                  url.searchParams.set('slug', art.slug);
+                  window.history.pushState({}, '', url.toString());
+                }
+              }}
+              onNavigateTab={(tab, gameId) => {
+                if (gameId) setUrlGameId(gameId);
+                setActiveTab(tab);
+              }}
+            />
+          )
+        )}
+
+        {/* NBA Tab: Content Performance & Technical SEO Dashboard */}
+        {activeTab === 'content-perf' && (
+          <ContentPerformanceTab
+            onSelectArticle={(art) => {
+              setSelectedArticle(art);
+              setActiveTab('previews');
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', 'previews');
+                url.searchParams.set('slug', art.slug);
+                window.history.pushState({}, '', url.toString());
+              }
+            }}
+            onNavigateTab={(tab, gameId) => {
+              if (gameId) setUrlGameId(gameId);
+              setActiveTab(tab);
+            }}
+          />
+        )}
       </main>
 
       {/* Floating Toast Notification Container */}
@@ -1300,8 +1411,18 @@ export function App() {
                   </button>
                 </li>
                 <li>
+                  <button onClick={() => { setActiveTab('previews'); setSelectedArticle(null); }} className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
+                    NBA Game Previews &amp; Analysis
+                  </button>
+                </li>
+                <li>
                   <button onClick={() => setActiveTab('analytics')} className="hover:text-blue-600 dark:hover:text-cyan-400 cursor-pointer font-semibold text-cyan-500">
                     GA4 &amp; Engagement Dashboard
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => setActiveTab('content-perf')} className="hover:text-blue-600 dark:hover:text-indigo-400 cursor-pointer text-indigo-500 font-semibold">
+                    Content Ops &amp; Technical SEO
                   </button>
                 </li>
               </ul>

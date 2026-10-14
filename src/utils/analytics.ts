@@ -325,6 +325,39 @@ class AnalyticsManager {
       interaction_type: interactionType,
     });
   }
+  /**
+   * Tracks article reader views for SEO & content attribution.
+   */
+  public trackArticleView(slug: string, title: string, articleType: string, targetKeyword?: string): void {
+    this.trackEvent('article_view', {
+      article_slug: slug,
+      article_title: title,
+      article_type: articleType,
+      target_keyword: targetKeyword || '',
+    });
+  }
+
+  /**
+   * Tracks reading scroll depth milestones (25%, 50%, 75%, 100%).
+   */
+  public trackArticleScroll(slug: string, depthPercent: number): void {
+    this.trackEvent('article_scroll_depth', {
+      article_slug: slug,
+      scroll_depth: depthPercent,
+    });
+  }
+
+  /**
+   * Tracks clicks on contextual internal links from articles into picks or props.
+   */
+  public trackArticleCtaClick(slug: string, destinationTab: string, ctaText: string, gameId?: string): void {
+    this.trackEvent('article_cta_click', {
+      article_slug: slug,
+      destination_tab: destinationTab,
+      cta_text: ctaText,
+      game_id: gameId || '',
+    });
+  }
 
   /**
    * Tracks returning visitors compliantly using localStorage counters.
@@ -374,6 +407,13 @@ class AnalyticsManager {
     } catch {
       // localStorage may be disabled or restricted in incognito; ignore safely
     }
+  }
+
+  public trackFeatureUse(featureName: string, params: Record<string, any> = {}): void {
+    this.trackEvent('feature_use', {
+      feature_name: featureName,
+      ...params,
+    });
   }
 
   /**
