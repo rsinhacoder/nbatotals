@@ -22,6 +22,7 @@ import { analytics } from '../../utils/analytics';
 import { updateSEOHead } from '../../utils/seoHead';
 import { nbaDateService } from '../../utils/nbaDateService';
 import { stripMarkdown } from './ArticleContentRenderer';
+import { ArticleImageBanner } from './ArticleImageBanner';
 
 interface PreviewsHubTabProps {
   onSelectArticle: (article: NBAArticle) => void;
@@ -330,7 +331,6 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {dailyPreviews.map((preview) => {
-              const badge = getTypeBadge(preview.articleType);
               const isUnder = preview.modelContext?.pickType === 'UNDER';
               return (
                 <article
@@ -338,18 +338,10 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
                   onClick={() => onSelectArticle(preview)}
                   className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1322] overflow-hidden shadow-sm hover:shadow-lg hover:border-blue-500/40 transition-all cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="p-5 space-y-3">
-                    {/* Header meta */}
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${badge.color}`}>
-                        {badge.label}
-                      </span>
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
-                        <Clock className="w-3 h-3" />
-                        <span>{preview.readingTimeMinutes} min</span>
-                      </div>
-                    </div>
+                  {/* Relatable Matchup Image Banner with Authentic Team Logos */}
+                  <ArticleImageBanner article={preview} variant="card" />
 
+                  <div className="p-5 space-y-3">
                     {/* Title */}
                     <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-blue-500 transition line-clamp-2 leading-snug">
                       {stripMarkdown(preview.title)}
@@ -394,7 +386,7 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
                     <div className="flex items-center gap-3">
                       <button
                         onClick={(e) => handleShare(preview, e)}
-                        className="p-1 rounded text-slate-400 hover:text-slate-200 transition"
+                        className="p-1 rounded text-slate-400 hover:text-slate-200 transition cursor-pointer"
                         title="Share preview link"
                       >
                         <Share2 className="w-3.5 h-3.5" />
@@ -429,23 +421,16 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {editorialGuides.map((guide) => {
-              const badge = getTypeBadge(guide.articleType);
               return (
                 <article
                   key={guide.id}
                   onClick={() => onSelectArticle(guide)}
                   className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1322] overflow-hidden shadow-sm hover:shadow-lg hover:border-purple-500/40 transition-all cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="p-5 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${badge.color}`}>
-                        {badge.label}
-                      </span>
-                      <span className="text-[11px] font-mono text-slate-400">
-                        {guide.readingTimeMinutes} min read
-                      </span>
-                    </div>
+                  {/* Relatable Image Banner */}
+                  <ArticleImageBanner article={guide} variant="card" />
 
+                  <div className="p-5 space-y-3">
                     <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-purple-400 transition line-clamp-2 leading-snug">
                       {stripMarkdown(guide.title)}
                     </h3>

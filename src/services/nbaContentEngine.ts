@@ -18,9 +18,10 @@ import type {
 } from '../types/content';
 import { nbaDateService } from '../utils/nbaDateService';
 import { NBA_TEAMS_META, resolveTeamMeta } from './nbaRosterService';
+import { getRelatableArticlePhoto } from '../components/content/ArticleImageBanner';
 
-const STORAGE_KEY_ARTICLES = 'nbatotals_published_articles_v2';
-const STORAGE_KEY_PERF = 'nbatotals_content_performance_v2';
+const STORAGE_KEY_ARTICLES = 'nbatotals_published_articles_v3';
+const STORAGE_KEY_PERF = 'nbatotals_content_performance_v3';
 
 /**
  * High-value curated seed articles covering Evergreen Guides,
@@ -815,6 +816,8 @@ Track live line movement and sportsbook line shopping on our **[Daily NBA Picks 
       },
     ];
 
+    const relatablePhoto = getRelatableArticlePhoto({ slug, title, awayTeam: awayMeta.name, homeTeam: homeMeta.name });
+
     const newArticle: NBAArticle = {
       id: `preview_${options.gameId}_${Date.now()}`,
       slug,
@@ -834,8 +837,8 @@ Track live line movement and sportsbook line shopping on our **[Daily NBA Picks 
       homeAbbrev: homeMeta.abbrev,
       gameTime: options.gameTime,
       venue: options.venue || `${homeMeta.city} Arena`,
-      featuredImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
-      featuredImageAlt: `${awayMeta.name} vs ${homeMeta.name} NBA game action`,
+      featuredImage: relatablePhoto.url,
+      featuredImageAlt: `${awayMeta.name} vs ${homeMeta.name} NBA game action — ${relatablePhoto.alt}`,
       primaryKeyword,
       secondaryKeywords: [
         `${awayMeta.abbrev.toLowerCase()} vs ${homeMeta.abbrev.toLowerCase()} over under`,

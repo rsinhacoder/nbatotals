@@ -22,6 +22,7 @@ import { nbaContentEngine } from '../../services/nbaContentEngine';
 import { analytics } from '../../utils/analytics';
 import { updateSEOHead, resetSEOHeadToDefault } from '../../utils/seoHead';
 import { ArticleContentRenderer, stripMarkdown } from './ArticleContentRenderer';
+import { ArticleImageBanner } from './ArticleImageBanner';
 
 interface ArticleDetailPageProps {
   article: NBAArticle;
@@ -216,6 +217,9 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
           </div>
         </div>
       </header>
+
+      {/* Relatable Matchup & Action Hero Banner */}
+      <ArticleImageBanner article={article} variant="detail" />
 
       {/* Model Box: Quantitative Forecast Card (Featured prominently above fold) */}
       {modelCtx && (
