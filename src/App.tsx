@@ -99,7 +99,7 @@ export function App() {
     return null;
   });
 
-  // Navigation: 5 core human-centered tabs + SEO Previews & Dashboards
+  // Navigation: 5 core human-centered tabs + SEO Previews & Dashboards (Previews is the primary main tab)
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -109,7 +109,7 @@ export function App() {
         return 'previews';
       }
     }
-    return 'picks';
+    return 'previews';
   });
 
   const [urlGameId, setUrlGameId] = useState<string | null>(() => {
@@ -177,7 +177,7 @@ export function App() {
 
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
-      const tab = params.get('tab') || 'picks';
+      const tab = params.get('tab') || 'previews';
       const slug = params.get('slug');
       setActiveTab(tab);
       setUrlGameId(params.get('game'));
@@ -380,7 +380,7 @@ export function App() {
       }
     } else {
       if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-')) {
-        setActiveTab('picks');
+        setActiveTab('previews');
       }
     }
   };
@@ -1103,7 +1103,55 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0">
-        {/* NBA Tab 1: Picks Board */}
+        {/* NBA Tab 1: Game Previews & Analytical Matchup Breakdowns (Primary Main Tab) */}
+        {activeTab === 'previews' && (
+          selectedArticle ? (
+            <ArticleDetailPage
+              article={selectedArticle}
+              onBack={() => {
+                setSelectedArticle(null);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('slug');
+                  window.history.replaceState({}, '', url.toString());
+                }
+              }}
+              onNavigateTab={(tab, gameId) => {
+                setSelectedArticle(null);
+                if (gameId) setUrlGameId(gameId);
+                setActiveTab(tab);
+              }}
+              onSelectArticle={(art) => {
+                setSelectedArticle(art);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'previews');
+                  url.searchParams.set('slug', art.slug);
+                  window.history.pushState({}, '', url.toString());
+                }
+              }}
+            />
+          ) : (
+            <PreviewsHubTab
+              upcomingMatches={upcomingMatches}
+              onSelectArticle={(art) => {
+                setSelectedArticle(art);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'previews');
+                  url.searchParams.set('slug', art.slug);
+                  window.history.pushState({}, '', url.toString());
+                }
+              }}
+              onNavigateTab={(tab, gameId) => {
+                if (gameId) setUrlGameId(gameId);
+                setActiveTab(tab);
+              }}
+            />
+          )
+        )}
+
+        {/* NBA Tab 2: Picks Board */}
         {activeTab === 'picks' && (
           <PicksBoardTab
             upcomingMatches={upcomingMatches}
@@ -1250,54 +1298,6 @@ export function App() {
           <AnalyticsDashboardTab
             onNavigateTab={(tab) => setActiveTab(tab)}
           />
-        )}
-
-        {/* NBA Tab: Game Previews & Analytical Matchup Breakdowns */}
-        {activeTab === 'previews' && (
-          selectedArticle ? (
-            <ArticleDetailPage
-              article={selectedArticle}
-              onBack={() => {
-                setSelectedArticle(null);
-                if (typeof window !== 'undefined') {
-                  const url = new URL(window.location.href);
-                  url.searchParams.delete('slug');
-                  window.history.replaceState({}, '', url.toString());
-                }
-              }}
-              onNavigateTab={(tab, gameId) => {
-                setSelectedArticle(null);
-                if (gameId) setUrlGameId(gameId);
-                setActiveTab(tab);
-              }}
-              onSelectArticle={(art) => {
-                setSelectedArticle(art);
-                if (typeof window !== 'undefined') {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set('tab', 'previews');
-                  url.searchParams.set('slug', art.slug);
-                  window.history.pushState({}, '', url.toString());
-                }
-              }}
-            />
-          ) : (
-            <PreviewsHubTab
-              upcomingMatches={upcomingMatches}
-              onSelectArticle={(art) => {
-                setSelectedArticle(art);
-                if (typeof window !== 'undefined') {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set('tab', 'previews');
-                  url.searchParams.set('slug', art.slug);
-                  window.history.pushState({}, '', url.toString());
-                }
-              }}
-              onNavigateTab={(tab, gameId) => {
-                if (gameId) setUrlGameId(gameId);
-                setActiveTab(tab);
-              }}
-            />
-          )
         )}
 
         {/* NBA Tab: Content Performance & Technical SEO Dashboard */}

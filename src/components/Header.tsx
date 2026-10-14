@@ -207,6 +207,14 @@ export const Header: React.FC<HeaderProps> = ({
         ]
       : [
           {
+            id: 'previews',
+            label: 'Game Previews',
+            icon: FileText,
+            badge: upcomingCount > 0 ? `${upcomingCount} Slate` : 'DAILY',
+            badgeColor:
+              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+          },
+          {
             id: 'picks',
             label: 'Picks Board',
             icon: CalendarDays,
@@ -252,14 +260,6 @@ export const Header: React.FC<HeaderProps> = ({
               'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
           },
           {
-            id: 'previews',
-            label: 'Game Previews',
-            icon: FileText,
-            badge: 'DAILY',
-            badgeColor:
-              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-          },
-          {
             id: 'academy',
             label: 'Strategy Academy',
             icon: GraduationCap,
@@ -288,29 +288,40 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2">
         {/* Left: Brand Identity & Sport Switcher */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Logo Badge */}
-          <QuantLogoMark />
+          {/* Logo Badge & Brand Title Clickable to Home / Main Tab */}
+          <div
+            onClick={() => {
+              if (currentSport === 'nba') setActiveTab('previews');
+              else if (currentSport === 'nhl') setActiveTab('nhl-picks');
+              else setActiveTab('khl-picks');
+            }}
+            className="flex items-center gap-2 sm:gap-3 shrink-0 cursor-pointer group"
+            title="Return to Game Previews"
+          >
+            {/* Logo Badge */}
+            <QuantLogoMark />
 
-          {/* Brand Title */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <h1 className="text-base sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1 whitespace-nowrap">
-              <span>{currentSport === 'khl' ? 'KHL' : currentSport === 'nhl' ? 'NHL' : 'NBA'}</span>
-              <span
-                className={
-                  currentSport === 'khl'
-                    ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-400 bg-clip-text text-transparent'
-                    : currentSport === 'nhl'
-                    ? 'bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-400 bg-clip-text text-transparent'
-                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent'
-                }
-              >
-                TOTALS
+            {/* Brand Title */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <h1 className="text-base sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1 whitespace-nowrap">
+                <span>{currentSport === 'khl' ? 'KHL' : currentSport === 'nhl' ? 'NHL' : 'NBA'}</span>
+                <span
+                  className={
+                    currentSport === 'khl'
+                      ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-400 bg-clip-text text-transparent'
+                      : currentSport === 'nhl'
+                      ? 'bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-400 bg-clip-text text-transparent'
+                      : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent'
+                  }
+                >
+                  TOTALS
+                </span>
+                <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden sm:inline">.com</span>
+              </h1>
+              <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
+                {currentSport === 'khl' ? 'KHL POISSON' : currentSport === 'nhl' ? 'POISSON EDGE' : 'QUANT PRO'}
               </span>
-              <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden sm:inline">.com</span>
-            </h1>
-            <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
-              {currentSport === 'khl' ? 'KHL POISSON' : currentSport === 'nhl' ? 'POISSON EDGE' : 'QUANT PRO'}
-            </span>
+            </div>
           </div>
 
           {/* Sport Switcher Toggle */}
@@ -318,7 +329,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 onSelectSport('nba');
-                if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-')) setActiveTab('picks');
+                if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-')) setActiveTab('previews');
               }}
               className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 currentSport === 'nba'
