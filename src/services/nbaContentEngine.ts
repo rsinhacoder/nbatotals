@@ -18,10 +18,10 @@ import type {
 } from '../types/content';
 import { nbaDateService } from '../utils/nbaDateService';
 import { NBA_TEAMS_META, resolveTeamMeta } from './nbaRosterService';
-import { getRelatableArticlePhoto } from '../components/content/ArticleImageBanner';
+import { getStarPlayerForTeam } from '../data/nbaStarPlayers';
 
-const STORAGE_KEY_ARTICLES = 'nbatotals_published_articles_v3';
-const STORAGE_KEY_PERF = 'nbatotals_content_performance_v3';
+const STORAGE_KEY_ARTICLES = 'nbatotals_published_articles_v4';
+const STORAGE_KEY_PERF = 'nbatotals_content_performance_v4';
 
 /**
  * High-value curated seed articles covering Evergreen Guides,
@@ -40,8 +40,8 @@ export const SEED_ARTICLES: NBAArticle[] = [
     status: 'PUBLISHED',
     publishedAt: '2026-10-01T12:00:00Z',
     updatedAt: '2026-10-14T08:00:00Z',
-    featuredImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
-    featuredImageAlt: 'Basketball going through a hoop during an NBA game',
+    featuredImage: 'https://a.espncdn.com/i/headshots/nba/players/full/4065648.png',
+    featuredImageAlt: 'Jayson Tatum (Boston Celtics) NBA game totals and pace floor analysis',
     primaryKeyword: 'how nba game totals work',
     secondaryKeywords: ['nba over under explained', 'nba pace floor betting', 'how sportsbooks set nba totals', 'ols nba model'],
     searchIntent: 'Informational - Searchers wanting to understand how basketball totals are priced and how to mathematically beat sportsbook lines',
@@ -177,8 +177,8 @@ Visitors can track these live daily discrepancies directly on our **[Daily NBA P
     status: 'PUBLISHED',
     publishedAt: '2026-10-03T14:30:00Z',
     updatedAt: '2026-10-14T08:00:00Z',
-    featuredImage: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&w=1200&q=80',
-    featuredImageAlt: 'NBA basketball hardwood court with statistics chart',
+    featuredImage: 'https://a.espncdn.com/i/headshots/nba/players/full/3945274.png',
+    featuredImageAlt: 'Luka Doncic (Dallas Mavericks) Rule of 47 scoring cap statistical proof',
     primaryKeyword: 'rule of 47 nba',
     secondaryKeywords: ['rule of 47 basketball', 'nba quarter scoring totals', 'lowest scoring quarter nba', 'nba under betting strategy'],
     searchIntent: 'Informational & Commercial - Bettors seeking the empirical formula and data backing the famous Rule of 47 scoring cap theory',
@@ -309,8 +309,8 @@ The statistical significance is overwhelming ($p < 0.0001$). A single quarter di
     status: 'PUBLISHED',
     publishedAt: '2026-10-10T16:00:00Z',
     updatedAt: '2026-10-14T08:00:00Z',
-    featuredImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
-    featuredImageAlt: 'Basketball player shooting a jump shot under arena spotlights',
+    featuredImage: 'https://a.espncdn.com/i/headshots/nba/players/full/5104157.png',
+    featuredImageAlt: 'Victor Wembanyama (San Antonio Spurs) points prop forecast and scoring trends',
     primaryKeyword: 'victor wembanyama points projection',
     secondaryKeywords: ['wembanyama player props', 'wembanyama points line tonight', 'wembanyama scoring average', 'spurs offensive rating'],
     searchIntent: 'Commercial & Informational - Fans and bettors looking for statistical analysis and expected points projections on Victor Wembanyama',
@@ -816,7 +816,8 @@ Track live line movement and sportsbook line shopping on our **[Daily NBA Picks 
       },
     ];
 
-    const relatablePhoto = getRelatableArticlePhoto({ slug, title, awayTeam: awayMeta.name, homeTeam: homeMeta.name });
+    const awayStar = getStarPlayerForTeam(awayMeta.name);
+    const homeStar = getStarPlayerForTeam(homeMeta.name);
 
     const newArticle: NBAArticle = {
       id: `preview_${options.gameId}_${Date.now()}`,
@@ -837,8 +838,8 @@ Track live line movement and sportsbook line shopping on our **[Daily NBA Picks 
       homeAbbrev: homeMeta.abbrev,
       gameTime: options.gameTime,
       venue: options.venue || `${homeMeta.city} Arena`,
-      featuredImage: relatablePhoto.url,
-      featuredImageAlt: `${awayMeta.name} vs ${homeMeta.name} NBA game action — ${relatablePhoto.alt}`,
+      featuredImage: homeStar.headshotUrl,
+      featuredImageAlt: `${awayStar.name} (${awayMeta.name}) vs ${homeStar.name} (${homeMeta.name}) NBA Matchup Preview`,
       primaryKeyword,
       secondaryKeywords: [
         `${awayMeta.abbrev.toLowerCase()} vs ${homeMeta.abbrev.toLowerCase()} over under`,

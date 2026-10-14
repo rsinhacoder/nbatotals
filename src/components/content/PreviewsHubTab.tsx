@@ -237,36 +237,13 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
           onClick={() => onSelectArticle(featuredArticle)}
           className="group relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1322] shadow-md hover:shadow-xl hover:border-blue-500/50 transition-all cursor-pointer flex flex-col lg:flex-row items-stretch"
         >
-          {/* Featured Image */}
-          <div className="lg:w-1/2 relative min-h-[260px] overflow-hidden bg-slate-900">
-            <img
-              src={featuredArticle.featuredImage}
-              alt={featuredArticle.featuredImageAlt}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+          {/* Featured Visual Star Player Duel */}
+          <div className="lg:w-1/2 relative min-h-[260px] overflow-hidden">
+            <ArticleImageBanner
+              article={featuredArticle}
+              variant="card"
+              className="h-full min-h-[260px] lg:min-h-[300px]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-            <div className="absolute top-4 left-4">
-              <span className={`px-2.5 py-1 rounded-full text-[11px] font-black tracking-wide border uppercase ${getTypeBadge(featuredArticle.articleType).color}`}>
-                Featured Analysis
-              </span>
-            </div>
-            {featuredArticle.modelContext && (
-              <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-mono text-slate-400 uppercase">Model Projection</div>
-                  <div className="text-sm font-black text-white">
-                    {featuredArticle.modelContext.projectedTotal.toFixed(1)} Pts vs {featuredArticle.modelContext.marketLine} Line
-                  </div>
-                </div>
-                <span className={`px-2 py-0.5 rounded text-xs font-black ${
-                  featuredArticle.modelContext.pickType === 'UNDER'
-                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                }`}>
-                  {featuredArticle.modelContext.pickType} EDGE ({Math.abs(featuredArticle.modelContext.edgePoints).toFixed(1)} PTS)
-                </span>
-              </div>
-            )}
           </div>
 
           {/* Featured Details */}
