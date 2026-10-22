@@ -55,6 +55,58 @@ export interface ArticleModelContext {
   paceFloorProbability: number; // e.g. 85.2% Under if Q < 47
 }
 
+export interface ArticleNHLModelContext {
+  gameId: string;
+  awayTeam: string;
+  homeTeam: string;
+  awayAbbrev: string;
+  homeAbbrev: string;
+  gameDate: string;
+  gameTime: string;
+  venue?: string;
+  sportsbookTotal: number;
+  modelProjectedTotal: number;
+  projectedTotal?: number;
+  modelProjectedHomeGoals: number;
+  modelProjectedAwayGoals: number;
+  goalEdge: number;
+  edge?: number;
+  pickType: 'OVER' | 'UNDER' | 'PASS';
+  formula?: string;
+  puckline: number;
+  pucklineLine?: number;
+  pucklineFavorite?: string;
+  pucklineHomeOdds: string;
+  pucklineAwayOdds: string;
+  moneylineHome: string;
+  moneylineAway: string;
+  awayGoalie: {
+    name: string;
+    confirmed: boolean;
+    savePct: number;
+    gaa: number;
+    gsax60: number;
+    record: string;
+  };
+  homeGoalie: {
+    name: string;
+    confirmed: boolean;
+    savePct: number;
+    gaa: number;
+    gsax60: number;
+    record: string;
+  };
+  projectedTotalShots: number;
+  sportsbookShotsTotal: number;
+  confidenceScore: number;
+  probOver5_5: number;
+  probUnder5_5: number;
+  probOver6_0: number;
+  probUnder6_0: number;
+  probOver6_5: number;
+  probUnder6_5: number;
+}
+
 export interface FAQItem {
   question: string;
   answer: string;
@@ -88,6 +140,7 @@ export interface NBAArticle {
   metaTitle: string;
   metaDescription: string;
   canonicalUrl: string;
+  sport?: 'nba' | 'nhl';
   articleType: ArticleType;
   status: ContentStatus;
   publishedAt: string;
@@ -116,6 +169,7 @@ export interface NBAArticle {
   tableOfContents: TableOfContentsItem[];
   sections: ArticleSection[];
   modelContext?: ArticleModelContext;
+  nhlModelContext?: ArticleNHLModelContext;
   playerSpotlights?: PlayerSpotlight[];
   faq: FAQItem[];
   internalLinks: InternalLinkItem[];

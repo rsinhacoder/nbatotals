@@ -19,6 +19,8 @@ import type {
 import { nbaDateService } from '../utils/nbaDateService';
 import { NBA_TEAMS_META, resolveTeamMeta } from './nbaRosterService';
 import { getStarPlayerForTeam } from '../data/nbaStarPlayers';
+import { nhlContentEngine } from './nhlContentEngine';
+import type { NHLUpcomingMatch } from '../types/nhl';
 
 const STORAGE_KEY_ARTICLES = 'nbatotals_published_articles_v4';
 const STORAGE_KEY_PERF = 'nbatotals_content_performance_v4';
@@ -938,6 +940,36 @@ Track live line movement and sportsbook line shopping on our **[Daily NBA Picks 
     }
 
     return generated;
+  }
+
+  /**
+   * Generates automated daily previews for an entire slate of NHL matches
+   * and persists them in the content registry.
+   */
+  public generateNHLPreviewsForSlate(
+    matches: NHLUpcomingMatch[],
+    targetDateStr?: string
+  ): NBAArticle[] {
+    this.init();
+    const nhlArticles = nhlContentEngine.generatePreviewsForSlate(matches, targetDateStr);
+    let hasNew = false;
+    for (const art of nhlArticles) {
+      if (!this.articles.has(art.slug)) {
+        this.articles.set(art.slug, art);
+        hasNew = true;
+      }
+    }
+    if (hasNew) {
+      this.persist();
+    }
+    return nhlArticles;
+  }
+
+  public getArticlesBySport(sport: 'nba' | 'nhl'): NBAArticle[] {
+    return this.getAllArticles().filter((a) => {
+      if (sport === 'nhl') return a.sport === 'nhl';
+      return a.sport !== 'nhl'; // Default is NBA
+    });
   }
 }
 

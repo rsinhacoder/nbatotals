@@ -23,8 +23,8 @@ import { type ModelConfig, MODEL_PRESETS } from '../utils/modelConstants';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 interface HeaderProps {
-  currentSport: 'nba' | 'nhl' | 'khl' | 'football';
-  onSelectSport: (sport: 'nba' | 'nhl' | 'khl' | 'football') => void;
+  currentSport: 'nba' | 'nhl';
+  onSelectSport: (sport: 'nba' | 'nhl') => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onOpenSync: () => void;
@@ -34,7 +34,6 @@ interface HeaderProps {
   gameCount: number;
   upcomingCount: number;
   nhlUpcomingCount?: number;
-  khlUpcomingCount?: number;
   trackedBetsCount: number;
   currentSeasonPicksCount?: number;
   seasonLabel: string;
@@ -102,7 +101,6 @@ export const Header: React.FC<HeaderProps> = ({
   gameCount,
   upcomingCount,
   nhlUpcomingCount = 6,
-  khlUpcomingCount = 6,
   trackedBetsCount,
   currentSeasonPicksCount,
   seasonLabel,
@@ -116,53 +114,16 @@ export const Header: React.FC<HeaderProps> = ({
 
   // Dynamic Navigation Items based on Active Sport
   const tabs =
-    currentSport === 'khl'
+    currentSport === 'nhl'
       ? [
           {
-            id: 'khl-picks',
-            label: 'KHL Edge Board',
-            icon: CalendarDays,
-            badge: khlUpcomingCount > 0 ? String(khlUpcomingCount) : undefined,
-            badgeColor:
-              'bg-cyan-50 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
-          },
-          {
-            id: 'results',
-            label: 'Model Correctness',
-            icon: CheckCircle2,
-            badge: currentSeasonPicksCount ? `${currentSeasonPicksCount} Graded` : '2026–27 Season',
+            id: 'previews',
+            label: 'Game Previews',
+            icon: FileText,
+            badge: nhlUpcomingCount > 0 ? `${nhlUpcomingCount} Slate` : 'DAILY',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },
-          {
-            id: 'khl-analyzer',
-            label: 'Matchup Analyzer',
-            icon: SlidersHorizontal,
-          },
-          {
-            id: 'khl-stats',
-            label: '5-Season Study & Data',
-            icon: BarChart3,
-            badge: '4,080 G',
-            badgeColor:
-              'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
-          },
-          {
-            id: 'tracker',
-            label: 'Bet Tracker',
-            icon: BookmarkCheck,
-            badge: trackedBetsCount > 0 ? String(trackedBetsCount) : undefined,
-            badgeColor:
-              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-          },
-          {
-            id: 'academy',
-            label: 'Strategy Academy',
-            icon: GraduationCap,
-          },
-        ]
-      : currentSport === 'nhl'
-      ? [
           {
             id: 'nhl-picks',
             label: 'NHL Edge Board',
@@ -206,52 +167,12 @@ export const Header: React.FC<HeaderProps> = ({
             icon: GraduationCap,
           },
         ]
-      : currentSport === 'football'
-      ? [
-          {
-            id: 'football-throw-ins',
-            label: 'Throw-In Scanner',
-            icon: Sparkles,
-            badge: 'UNDER 40.5',
-            badgeColor:
-              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-          },
-          {
-            id: 'results',
-            label: 'Model Correctness',
-            icon: CheckCircle2,
-            badge: currentSeasonPicksCount ? `${currentSeasonPicksCount} Graded` : '2026–27 Season',
-            badgeColor:
-              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-          },
-          {
-            id: 'tracker',
-            label: 'Bet Tracker',
-            icon: BookmarkCheck,
-            badge: trackedBetsCount > 0 ? String(trackedBetsCount) : undefined,
-            badgeColor:
-              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-          },
-          {
-            id: 'academy',
-            label: 'Strategy Academy',
-            icon: GraduationCap,
-          },
-        ]
       : [
           {
             id: 'previews',
             label: 'Game Previews',
             icon: FileText,
             badge: upcomingCount > 0 ? `${upcomingCount} Slate` : 'DAILY',
-            badgeColor:
-              'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-          },
-          {
-            id: 'football-throw-ins',
-            label: 'Throw-In Scanner',
-            icon: Sparkles,
-            badge: 'SOCCER',
             badgeColor:
               'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
           },
@@ -331,11 +252,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Logo Badge & Brand Title Clickable to Home / Main Tab */}
           <div
-            onClick={() => {
-              if (currentSport === 'nba') setActiveTab('previews');
-              else if (currentSport === 'nhl') setActiveTab('nhl-picks');
-              else setActiveTab('khl-picks');
-            }}
+            onClick={() => setActiveTab('previews')}
             className="flex items-center gap-2 sm:gap-3 shrink-0 cursor-pointer group"
             title="Return to Game Previews"
           >
@@ -345,15 +262,11 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Brand Title */}
             <div className="flex items-center gap-1.5 shrink-0">
               <h1 className="text-base sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white m-0 flex items-center gap-1 whitespace-nowrap">
-                <span>{currentSport === 'khl' ? 'KHL' : currentSport === 'nhl' ? 'NHL' : currentSport === 'football' ? 'FOOTBALL' : 'NBA'}</span>
+                <span>{currentSport === 'nhl' ? 'NHL' : 'NBA'}</span>
                 <span
                   className={
-                    currentSport === 'khl'
-                      ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-400 bg-clip-text text-transparent'
-                      : currentSport === 'nhl'
+                    currentSport === 'nhl'
                       ? 'bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-400 bg-clip-text text-transparent'
-                      : currentSport === 'football'
-                      ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent'
                       : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-blue-400 dark:via-indigo-300 dark:to-cyan-400 bg-clip-text text-transparent'
                   }
                 >
@@ -362,7 +275,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-slate-400 dark:text-zinc-500 font-medium text-xs hidden sm:inline">.com</span>
               </h1>
               <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/30">
-                {currentSport === 'khl' ? 'KHL POISSON' : currentSport === 'nhl' ? 'POISSON EDGE' : currentSport === 'football' ? 'UNDER 40.5' : 'QUANT PRO'}
+                {currentSport === 'nhl' ? 'POISSON EDGE' : 'QUANT PRO'}
               </span>
             </div>
           </div>
@@ -372,7 +285,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 onSelectSport('nba');
-                if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-') || activeTab === 'football-throw-ins') setActiveTab('previews');
+                if (activeTab.startsWith('nhl-')) setActiveTab('previews');
               }}
               className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 currentSport === 'nba'
@@ -386,7 +299,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 onSelectSport('nhl');
-                if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
+                if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results' && activeTab !== 'previews') {
                   setActiveTab('nhl-picks');
                 }
               }}
@@ -404,41 +317,6 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               )}
             </button>
-            <button
-              onClick={() => {
-                onSelectSport('khl');
-                if (!activeTab.startsWith('khl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
-                  setActiveTab('khl-picks');
-                }
-              }}
-              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                currentSport === 'khl'
-                  ? 'bg-cyan-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <span>❄️</span>
-              <span className="font-extrabold">KHL</span>
-              {khlUpcomingCount > 0 && (
-                <span className="hidden sm:inline-block px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-400/30 text-white font-mono">
-                  {khlUpcomingCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                onSelectSport('football');
-                setActiveTab('football-throw-ins');
-              }}
-              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                currentSport === 'football'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <span>⚽</span>
-              <span className="font-extrabold">SOCCER</span>
-            </button>
           </div>
         </div>
 
@@ -450,9 +328,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
               className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-[#141b2a] hover:bg-slate-50 dark:hover:bg-[#1c2438] text-slate-800 dark:text-slate-100 border border-slate-300/80 dark:border-[#222c42] shadow-2xs transition-all cursor-pointer group"
               title={
-                currentSport === 'khl'
-                  ? 'KHL Model: 5-Year Bivariate Poisson & Far East Decay'
-                  : currentSport === 'nhl'
+                currentSport === 'nhl'
                   ? 'NHL Model: 5-Year Bivariate Poisson'
                   : `Active Model: ${activeModel.name}`
               }
@@ -462,12 +338,10 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600 dark:bg-blue-400"></span>
               </span>
               <span className="font-mono text-xs font-bold sm:hidden">
-                {currentSport === 'khl' ? 'KHL Poisson' : currentSport === 'nhl' ? 'Poisson' : activeModel.id === '5_YEAR' ? '5-Yr' : '2-Yr'}
+                {currentSport === 'nhl' ? 'Poisson' : activeModel.id === '5_YEAR' ? '5-Yr' : '2-Yr'}
               </span>
               <span className="font-mono font-bold hidden sm:inline">
-                {currentSport === 'khl'
-                  ? '5-Yr KHL Poisson xG'
-                  : currentSport === 'nhl'
+                {currentSport === 'nhl'
                   ? '5-Yr Poisson xG'
                   : activeModel.shortLabel}
               </span>

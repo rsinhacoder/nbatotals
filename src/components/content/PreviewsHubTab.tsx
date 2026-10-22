@@ -5,15 +5,10 @@ import {
   Calendar,
   Clock,
   ArrowRight,
-  TrendingUp,
   Sparkles,
-  BarChart3,
   BookOpen,
   Users,
-  CheckCircle2,
   Share2,
-  ExternalLink,
-  ShieldAlert,
   Flame,
 } from 'lucide-react';
 import type { NBAArticle, ArticleType } from '../../types/content';
@@ -28,13 +23,18 @@ interface PreviewsHubTabProps {
   onSelectArticle: (article: NBAArticle) => void;
   onNavigateTab: (tab: string, gameId?: string) => void;
   upcomingMatches?: any[];
+  nhlUpcomingMatches?: any[];
+  currentSport?: 'nba' | 'nhl';
 }
 
 export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
   onSelectArticle,
   onNavigateTab,
   upcomingMatches = [],
+  nhlUpcomingMatches = [],
+  currentSport = 'nba',
 }) => {
+  const [selectedSport, setSelectedSport] = useState<'ALL' | 'nba' | 'nhl'>('ALL');
   const [selectedType, setSelectedType] = useState<ArticleType | 'ALL'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
@@ -46,26 +46,40 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
     }
   }, [upcomingMatches]);
 
+  // Synchronize NHL slate previews
+  useEffect(() => {
+    if (nhlUpcomingMatches.length > 0) {
+      nbaContentEngine.generateNHLPreviewsForSlate(nhlUpcomingMatches);
+    }
+  }, [nhlUpcomingMatches]);
+
   const allArticles = useMemo(() => {
     return nbaContentEngine.getAllArticles();
-  }, [upcomingMatches]);
+  }, [upcomingMatches, nhlUpcomingMatches]);
 
   // Set Page SEO & Analytics on mount
   useEffect(() => {
     updateSEOHead({
-      title: 'NBA Game Previews, Over/Under Predictions & Statistical Analysis — NBATotals.com',
-      description: 'Data-backed NBA game previews, team pace breakdowns, and player scoring projections. Every preview combines 5-season OLS regression with consensus lines.',
+      title: 'NBA & NHL Game Previews, Over/Under Predictions & Quantitative Analysis — NBATotals.com',
+      description: 'Data-backed NBA & NHL game previews, team pace breakdowns, and player scoring projections. Every preview combines 5-season regression and Poisson models with consensus sportsbook lines.',
       canonicalUrl: 'https://nbatotals.com/?tab=previews',
       breadcrumbs: [
         { name: 'Home', url: '/' },
-        { name: 'NBA Previews & Analysis', url: '/?tab=previews' },
+        { name: 'Game Previews & Analysis', url: '/?tab=previews' },
       ],
     });
-    analytics.trackPageView('/?tab=previews', 'NBA Previews & Analysis Hub', 'content_hub');
+    analytics.trackPageView('/?tab=previews', 'Game Previews & Analysis Hub', 'content_hub');
   }, []);
+
+  const nbaCount = useMemo(() => allArticles.filter((a) => (a.sport || 'nba') === 'nba').length, [allArticles]);
+  const nhlCount = useMemo(() => allArticles.filter((a) => a.sport === 'nhl').length, [allArticles]);
 
   const filteredArticles = useMemo(() => {
     return allArticles.filter((article) => {
+      const artSport = article.sport || 'nba';
+      if (selectedSport !== 'ALL' && artSport !== selectedSport) {
+        return false;
+      }
       if (selectedType !== 'ALL' && article.articleType !== selectedType) {
         return false;
       }
@@ -83,7 +97,7 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
       }
       return true;
     });
-  }, [allArticles, selectedType, searchTerm]);
+  }, [allArticles, selectedSport, selectedType, searchTerm]);
 
   // Daily previews vs Evergreen/Study articles
   const dailyPreviews = useMemo(() => {
@@ -119,31 +133,6 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
     analytics.trackShare('page', article.title, 'web_share');
   };
 
-  const getTypeBadge = (type: ArticleType) => {
-    switch (type) {
-      case 'DAILY_PREVIEW':
-        return {
-          label: 'Game Preview',
-          color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-        };
-      case 'PLAYER_ANALYSIS':
-        return {
-          label: 'Player Props Analysis',
-          color: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-        };
-      case 'STATISTICAL_STUDY':
-        return {
-          label: 'Statistical Study',
-          color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-        };
-      case 'EVERGREEN_GUIDE':
-        return {
-          label: 'Strategy Guide',
-          color: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-        };
-    }
-  };
-
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* 1. Header Hero Banner */}
@@ -154,25 +143,31 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold tracking-wide uppercase">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Quantitative NBA Editorial &amp; Matchup Previews</span>
+            <span>Quantitative Sports Editorial &amp; Daily Matchup Previews</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-            Original, Data-Backed NBA Previews &amp; Statistical Analyses
+            Original, Data-Backed NBA &amp; NHL Previews
           </h1>
 
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Every preview is mathematically grounded in our 5-season Ordinary Least Squares regression model
-            (N=6,000 games), evaluating team pace floors, lowest scoring quarter boundaries, and individual player point projections.
+            Every preview is mathematically grounded in empirical statistical modeling: 5-season OLS regression for NBA game totals and 5-season bivariate Poisson distributions with starting goalie GSAx/60 for NHL hockey match totals.
           </p>
 
           {/* Quick Cross-Navigation Links */}
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => onNavigateTab('picks')}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-blue-500/20 transition cursor-pointer"
             >
-              <span>Live Picks Board</span>
+              <span>🏀 NBA Picks Board</span>
+              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+            <button
+              onClick={() => onNavigateTab('nhl-picks')}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition cursor-pointer"
+            >
+              <span>🏒 NHL Edge Board</span>
               <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
             <button
@@ -187,7 +182,7 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
               className="px-4 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xs border border-slate-700 flex items-center gap-2 transition cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-              <span>Rule of 47 Academy</span>
+              <span>Strategy Academy</span>
             </button>
           </div>
         </div>
@@ -207,8 +202,45 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
           />
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 md:pb-0">
+        {/* Sport Switcher Toggle + Category Pills */}
+        <div className="flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar pb-1 md:pb-0">
+          {/* Sport Filter Pills */}
+          <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-[#141b2a] border border-slate-200 dark:border-[#222c42] shrink-0 text-xs font-bold mr-2">
+            <button
+              onClick={() => setSelectedSport('ALL')}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                selectedSport === 'ALL'
+                  ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              All Slates ({allArticles.length})
+            </button>
+            <button
+              onClick={() => setSelectedSport('nba')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                selectedSport === 'nba'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🏀</span>
+              <span>NBA ({nbaCount})</span>
+            </button>
+            <button
+              onClick={() => setSelectedSport('nhl')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                selectedSport === 'nhl'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🏒</span>
+              <span>NHL ({nhlCount})</span>
+            </button>
+          </div>
+
+          {/* Article Type Pills */}
           {[
             { id: 'ALL', label: 'All Content' },
             { id: 'DAILY_PREVIEW', label: 'Game Previews' },
@@ -275,7 +307,7 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center font-black text-xs">
-                  NT
+                  {featuredArticle.sport === 'nhl' ? 'NHL' : 'NBA'}
                 </div>
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {featuredArticle.author.name}
@@ -298,24 +330,27 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
             <div className="flex items-center gap-2">
               <Flame className="w-5 h-5 text-amber-500" />
               <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                Today's Scheduled NBA Game Previews ({dailyPreviews.length})
+                Scheduled Daily Game Previews ({dailyPreviews.length})
               </h2>
             </div>
             <span className="text-xs font-mono text-slate-400">
-              Grounded in 5-Season OLS Regression
+              OLS Regression &amp; Bivariate Poisson Calibrated
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {dailyPreviews.map((preview) => {
-              const isUnder = preview.modelContext?.pickType === 'UNDER';
+              const isUnder = preview.sport === 'nhl'
+                ? preview.nhlModelContext?.pickType === 'UNDER'
+                : preview.modelContext?.pickType === 'UNDER';
+
               return (
                 <article
                   key={preview.id}
                   onClick={() => onSelectArticle(preview)}
                   className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1322] overflow-hidden shadow-sm hover:shadow-lg hover:border-blue-500/40 transition-all cursor-pointer flex flex-col justify-between"
                 >
-                  {/* Relatable Matchup Image Banner with Authentic Team Logos */}
+                  {/* Relatable Matchup Image Banner with Authentic Star Headshots & Team Logos */}
                   <ArticleImageBanner article={preview} variant="card" />
 
                   <div className="p-5 space-y-3">
@@ -324,8 +359,32 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
                       {stripMarkdown(preview.title)}
                     </h3>
 
-                    {/* Model Context Mini Box */}
-                    {preview.modelContext && (
+                    {/* NHL Model Context Mini Box */}
+                    {preview.nhlModelContext && (
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#121b2d] border border-slate-100 dark:border-slate-800/80 space-y-2">
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="text-slate-500">Market Consensus:</span>
+                          <span className="font-black text-slate-900 dark:text-white">
+                            {preview.nhlModelContext.sportsbookTotal} Goals
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="text-slate-500">Poisson Expected (xG):</span>
+                          <span className="font-black text-indigo-400">
+                            {preview.nhlModelContext.modelProjectedTotal.toFixed(2)} Goals
+                          </span>
+                        </div>
+                        <div className="pt-1.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                          <span className="text-slate-400 font-medium">Poisson Edge:</span>
+                          <span className={`font-black ${isUnder ? 'text-amber-400' : 'text-emerald-400'}`}>
+                            {preview.nhlModelContext.pickType} ({preview.nhlModelContext.goalEdge > 0 ? `+${preview.nhlModelContext.goalEdge.toFixed(2)}` : preview.nhlModelContext.goalEdge.toFixed(2)} g)
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* NBA Model Context Mini Box */}
+                    {!preview.nhlModelContext && preview.modelContext && (
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#121b2d] border border-slate-100 dark:border-slate-800/80 space-y-2">
                         <div className="flex items-center justify-between text-xs font-mono">
                           <span className="text-slate-500">Market Consensus:</span>
@@ -448,6 +507,7 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
             onClick={() => {
               setSearchTerm('');
               setSelectedType('ALL');
+              setSelectedSport('ALL');
             }}
             className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer"
           >
@@ -458,3 +518,4 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
     </div>
   );
 };
+export default PreviewsHubTab;

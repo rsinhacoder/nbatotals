@@ -34,8 +34,8 @@ import type { NBAGame } from '../types/nba';
 import { gradeManualGameResult, type ManualGameInput } from '../utils/gameResultsUpdater';
 
 interface ModelResultsTabProps {
-  currentSport: 'nba' | 'nhl' | 'khl';
-  onSelectSport?: (sport: 'nba' | 'nhl' | 'khl') => void;
+  currentSport: 'nba' | 'nhl';
+  onSelectSport?: (sport: 'nba' | 'nhl') => void;
   historicalGames?: NBAGame[];
   picks2026_27?: GradedModelPick[];
   onSyncGameResults?: () => Promise<number>;
@@ -58,9 +58,9 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
   // Season Selector: '2026-27' (Current Season) is DEFAULT
   const [seasonFilter, setSeasonFilter] = useState<'2026-27' | '2024-25' | 'ALL'>('2026-27');
 
-  // Sport Filter: 'ALL' | 'NBA' | 'NHL' | 'KHL'
-  const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL' | 'KHL'>(
-    currentSport === 'khl' ? 'KHL' : currentSport === 'nhl' ? 'NHL' : 'NBA'
+  // Sport Filter: 'ALL' | 'NBA' | 'NHL'
+  const [sportFilter, setSportFilter] = useState<'ALL' | 'NBA' | 'NHL'>(
+    currentSport === 'nhl' ? 'NHL' : 'NBA'
   );
 
   // Month Filter
@@ -86,7 +86,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
 
   // Manual Game Grader Modal State
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
-  const [manualSport, setManualSport] = useState<'NBA' | 'NHL' | 'KHL'>('NBA');
+  const [manualSport, setManualSport] = useState<'NBA' | 'NHL'>('NBA');
   const [manualDate, setManualDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [manualAwayTeam, setManualAwayTeam] = useState('');
   const [manualHomeTeam, setManualHomeTeam] = useState('');
@@ -720,20 +720,6 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
               }`}
             >
               🏒 NHL ({totalNHLPicks.toLocaleString()})
-            </button>
-            <button
-              onClick={() => {
-                setSportFilter('KHL');
-                setCurrentPage(1);
-                onSelectSport?.('khl');
-              }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                sportFilter === 'KHL'
-                  ? 'bg-cyan-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              ❄️ KHL ({totalKHLPicks.toLocaleString()})
             </button>
           </div>
 
@@ -1387,8 +1373,8 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                 <label className="text-slate-700 dark:text-zinc-300 font-semibold block mb-1">
                   Sport League
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['NBA', 'NHL', 'KHL'] as const).map((s) => (
+                <div className="grid grid-cols-2 gap-2">
+                  {(['NBA', 'NHL'] as const).map((s) => (
                     <button
                       key={s}
                       type="button"
@@ -1396,7 +1382,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                         setManualSport(s);
                         if (s === 'NBA' && (!manualLine || manualLine === '5.5' || manualLine === '6.0')) {
                           setManualLine('224.5');
-                        } else if ((s === 'NHL' || s === 'KHL') && (!manualLine || manualLine === '224.5')) {
+                        } else if (s === 'NHL' && (!manualLine || manualLine === '224.5')) {
                           setManualLine('6.0');
                         }
                       }}
@@ -1406,7 +1392,7 @@ export const ModelResultsTab: React.FC<ModelResultsTabProps> = ({
                           : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-zinc-300'
                       }`}
                     >
-                      {s === 'NBA' ? '🏀 NBA' : s === 'NHL' ? '🏒 NHL' : '❄️ KHL'}
+                      {s === 'NBA' ? '🏀 NBA' : '🏒 NHL'}
                     </button>
                   ))}
                 </div>

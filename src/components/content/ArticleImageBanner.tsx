@@ -1,8 +1,10 @@
 import React from 'react';
 import type { NBAArticle, ArticleType } from '../../types/content';
 import { resolveTeamMeta } from '../../services/nbaRosterService';
-import { getStarPlayerForTeam, NBA_STAR_PLAYERS, type NBAStarPlayer } from '../../data/nbaStarPlayers';
-import { Clock, TrendingUp, TrendingDown, Sparkles, MapPin, Zap } from 'lucide-react';
+import { getStarPlayerForTeam, NBA_STAR_PLAYERS } from '../../data/nbaStarPlayers';
+import { getStarPlayerForNHLTeam, NHL_STAR_PLAYERS } from '../../data/nhlStarPlayers';
+import { getNHLTeamProfile } from '../../data/nhlTeamProfiles';
+import { Clock, TrendingUp, TrendingDown, MapPin, Zap } from 'lucide-react';
 
 interface ArticleImageBannerProps {
   article: NBAArticle;
@@ -15,24 +17,113 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
   variant = 'card',
   className = '',
 }) => {
+  const isNHL = article.sport === 'nhl';
   const isDailyPreview = article.articleType === 'DAILY_PREVIEW' || Boolean(article.awayTeam && article.homeTeam);
 
-  const awayMeta = article.awayTeam ? resolveTeamMeta(article.awayTeam) : null;
-  const homeMeta = article.homeTeam ? resolveTeamMeta(article.homeTeam) : null;
+  // Team metadata & star player resolution
+  let awayLogo = '';
+  let awayTeamName = '';
+  let homeLogo = '';
+  let homeTeamName = '';
 
-  const awayStar: NBAStarPlayer = article.awayTeam
-    ? getStarPlayerForTeam(article.awayTeam)
-    : NBA_STAR_PLAYERS['BOS'];
-  const homeStar: NBAStarPlayer = article.homeTeam
-    ? getStarPlayerForTeam(article.homeTeam)
-    : NBA_STAR_PLAYERS['DAL'];
+  let awayStar = {
+    name: '',
+    shortName: '',
+    team: '',
+    position: '',
+    jersey: '',
+    stat: '',
+    headshotUrl: '',
+    primaryColor: '#2563eb',
+  };
+
+  let homeStar = {
+    name: '',
+    shortName: '',
+    team: '',
+    position: '',
+    jersey: '',
+    stat: '',
+    headshotUrl: '',
+    primaryColor: '#059669',
+  };
+
+  if (isNHL) {
+    const awayProfile = article.awayTeam ? getNHLTeamProfile(article.awayTeam) : null;
+    const homeProfile = article.homeTeam ? getNHLTeamProfile(article.homeTeam) : null;
+    awayLogo = awayProfile?.logo || '';
+    awayTeamName = awayProfile?.name || article.awayTeam || '';
+    homeLogo = homeProfile?.logo || '';
+    homeTeamName = homeProfile?.name || article.homeTeam || '';
+
+    const awayStarObj = article.awayTeam ? getStarPlayerForNHLTeam(article.awayTeam) : NHL_STAR_PLAYERS['EDM'];
+    const homeStarObj = article.homeTeam ? getStarPlayerForNHLTeam(article.homeTeam) : NHL_STAR_PLAYERS['TOR'];
+
+    awayStar = {
+      name: awayStarObj.name,
+      shortName: awayStarObj.shortName,
+      team: awayStarObj.team,
+      position: awayStarObj.position,
+      jersey: awayStarObj.jersey,
+      stat: `${awayStarObj.pointsPerGame} PTS/G`,
+      headshotUrl: awayStarObj.headshotUrl,
+      primaryColor: awayStarObj.primaryColor,
+    };
+
+    homeStar = {
+      name: homeStarObj.name,
+      shortName: homeStarObj.shortName,
+      team: homeStarObj.team,
+      position: homeStarObj.position,
+      jersey: homeStarObj.jersey,
+      stat: `${homeStarObj.pointsPerGame} PTS/G`,
+      headshotUrl: homeStarObj.headshotUrl,
+      primaryColor: homeStarObj.primaryColor,
+    };
+  } else {
+    const awayMeta = article.awayTeam ? resolveTeamMeta(article.awayTeam) : null;
+    const homeMeta = article.homeTeam ? resolveTeamMeta(article.homeTeam) : null;
+    awayLogo = awayMeta?.logo || '';
+    awayTeamName = awayMeta?.name || article.awayTeam || '';
+    homeLogo = homeMeta?.logo || '';
+    homeTeamName = homeMeta?.name || article.homeTeam || '';
+
+    const awayStarObj = article.awayTeam ? getStarPlayerForTeam(article.awayTeam) : NBA_STAR_PLAYERS['BOS'];
+    const homeStarObj = article.homeTeam ? getStarPlayerForTeam(article.homeTeam) : NBA_STAR_PLAYERS['DAL'];
+
+    awayStar = {
+      name: awayStarObj.name,
+      shortName: awayStarObj.shortName,
+      team: awayStarObj.team,
+      position: awayStarObj.position,
+      jersey: awayStarObj.jersey,
+      stat: `${awayStarObj.ppg} PPG`,
+      headshotUrl: awayStarObj.headshotUrl,
+      primaryColor: awayStarObj.primaryColor,
+    };
+
+    homeStar = {
+      name: homeStarObj.name,
+      shortName: homeStarObj.shortName,
+      team: homeStarObj.team,
+      position: homeStarObj.position,
+      jersey: homeStarObj.jersey,
+      stat: `${homeStarObj.ppg} PPG`,
+      headshotUrl: homeStarObj.headshotUrl,
+      primaryColor: homeStarObj.primaryColor,
+    };
+  }
 
   const modelCtx = article.modelContext;
+  const nhlCtx = article.nhlModelContext;
 
   const getTypeBadge = (type: ArticleType) => {
+    if (isNHL) {
+      return { label: '🏒 NHL Preview', color: 'bg-indigo-600/90 text-white border-indigo-400/40' };
+    }
     switch (type) {
       case 'DAILY_PREVIEW':
-        return { label: 'Game Preview', color: 'bg-blue-600/90 text-white border-blue-400/40' };
+        return { label: '🏀 NBA Preview', color: 'bg-blue-600/90 text-white border-blue-400/40' };
       case 'PLAYER_ANALYSIS':
         return { label: 'Player Props', color: 'bg-purple-600/90 text-white border-purple-400/40' };
       case 'STATISTICAL_STUDY':
@@ -55,7 +146,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
             : 'radial-gradient(circle at 50% 50%, rgba(30, 58, 138, 0.25), transparent 70%), #070b14',
         }}
       >
-        {/* Subtle Geometric Court Lines Grid */}
+        {/* Subtle Geometric Court / Rink Lines Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b0f_1px,transparent_1px),linear-gradient(to_bottom,#1e293b0f_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
         {/* Content Container */}
@@ -72,7 +163,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
           </div>
 
           {/* Center: Star Player Face-Off (No stock photos!) */}
-          {isDailyPreview && awayMeta && homeMeta ? (
+          {isDailyPreview && awayLogo && homeLogo ? (
             <div className="py-2 flex items-center justify-between gap-2 sm:gap-6 relative">
               {/* Away Star Player */}
               <div className="flex items-center gap-3 sm:gap-4 flex-1">
@@ -90,7 +181,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
                   </div>
                   {/* Floating Team Logo Badge */}
                   <div className="absolute -bottom-2 -right-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-950 p-1 border border-white/20 shadow-md flex items-center justify-center">
-                    <img src={awayMeta.logo} alt={awayMeta.name} className="w-full h-full object-contain" />
+                    <img src={awayLogo} alt={awayTeamName} className="w-full h-full object-contain" />
                   </div>
                 </div>
 
@@ -102,7 +193,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
                     {awayStar.name}
                   </div>
                   <div className="text-xs sm:text-sm font-mono text-slate-300 font-bold mt-0.5">
-                    {awayStar.ppg} PPG
+                    {awayStar.stat}
                   </div>
                 </div>
               </div>
@@ -117,11 +208,15 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
                     {article.gameTime}
                   </span>
                 )}
-                {modelCtx && (
+                {isNHL && nhlCtx ? (
+                  <span className="mt-1.5 text-[10px] font-mono text-slate-300 font-semibold hidden sm:inline-block">
+                    Total: <strong className="text-white">{nhlCtx.sportsbookTotal} Goals</strong>
+                  </span>
+                ) : modelCtx ? (
                   <span className="mt-1.5 text-[10px] font-mono text-slate-300 font-semibold hidden sm:inline-block">
                     Line: <strong className="text-white">{modelCtx.marketLine}</strong>
                   </span>
-                )}
+                ) : null}
               </div>
 
               {/* Home Star Player */}
@@ -134,7 +229,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
                     {homeStar.name}
                   </div>
                   <div className="text-xs sm:text-sm font-mono text-slate-300 font-bold mt-0.5">
-                    {homeStar.ppg} PPG
+                    {homeStar.stat}
                   </div>
                 </div>
 
@@ -152,7 +247,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
                   </div>
                   {/* Floating Team Logo Badge */}
                   <div className="absolute -bottom-2 -left-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-950 p-1 border border-white/20 shadow-md flex items-center justify-center">
-                    <img src={homeMeta.logo} alt={homeMeta.name} className="w-full h-full object-contain" />
+                    <img src={homeLogo} alt={homeTeamName} className="w-full h-full object-contain" />
                   </div>
                 </div>
               </div>
@@ -162,21 +257,23 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
             <div className="py-4 flex items-center gap-5">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl p-1 bg-white/10 border border-white/20 shadow-xl overflow-hidden shrink-0">
                 <img
-                  src={article.articleType === 'PLAYER_ANALYSIS' ? NBA_STAR_PLAYERS['SAS'].headshotUrl : NBA_STAR_PLAYERS['BOS'].headshotUrl}
-                  alt="NBA Featured Star"
+                  src={isNHL ? NHL_STAR_PLAYERS['EDM'].headshotUrl : NBA_STAR_PLAYERS['BOS'].headshotUrl}
+                  alt="Featured Star"
                   className="w-full h-full object-cover object-top scale-110"
                 />
               </div>
               <div className="space-y-1">
                 <div className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5" />
-                  <span>NBA Quantitative Player Modeling</span>
+                  <span>{isNHL ? 'NHL Poisson Goal Modeling' : 'NBA Quantitative Player Modeling'}</span>
                 </div>
                 <div className="text-white font-extrabold text-lg sm:text-xl">
                   {article.title}
                 </div>
                 <div className="text-xs text-slate-300">
-                  Calibrated using real possession data, defensive efficiency, and player usage rates.
+                  {isNHL
+                    ? 'Calibrated using 5-season bivariate Poisson distributions, starting goalie GSAx, and 5v5 Corsi possession.'
+                    : 'Calibrated using real possession data, defensive efficiency, and player usage rates.'}
                 </div>
               </div>
             </div>
@@ -186,10 +283,19 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
           <div className="flex items-center justify-between text-xs text-slate-300 border-t border-white/10 pt-3">
             <span className="flex items-center gap-1.5 text-[11px]">
               <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-              <span>{article.venue || (homeMeta ? `${homeMeta.city} Arena` : 'NBA Regulation Arena')}</span>
+              <span>{article.venue || (homeTeamName ? `${homeTeamName} Arena` : 'Regulation Arena')}</span>
             </span>
 
-            {modelCtx && (
+            {isNHL && nhlCtx ? (
+              <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase flex items-center gap-1 ${
+                nhlCtx.pickType === 'OVER'
+                  ? 'bg-emerald-500 text-slate-950'
+                  : 'bg-amber-400 text-slate-950'
+              }`}>
+                {nhlCtx.pickType === 'OVER' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                <span>MODEL {nhlCtx.pickType} {nhlCtx.sportsbookTotal} GOALS ({nhlCtx.goalEdge > 0 ? `+${nhlCtx.goalEdge.toFixed(2)}` : nhlCtx.goalEdge.toFixed(2)})</span>
+              </span>
+            ) : modelCtx ? (
               <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase flex items-center gap-1 ${
                 modelCtx.pickType === 'OVER'
                   ? 'bg-emerald-500 text-slate-950'
@@ -198,7 +304,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
                 {modelCtx.pickType === 'OVER' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                 <span>MODEL {modelCtx.pickType} {modelCtx.marketLine.toFixed(1)}</span>
               </span>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -230,13 +336,13 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
       </div>
 
       {/* Main Visual: Star Player Headshots (Left vs Right) */}
-      {isDailyPreview && awayMeta && homeMeta ? (
+      {isDailyPreview && awayLogo && homeLogo ? (
         <div className="absolute inset-0 flex items-end justify-between px-3 sm:px-6 z-10 pt-4">
           {/* Away Team Star Player */}
           <div className="flex flex-col items-start pb-2 relative group-hover:translate-x-0.5 transition-transform">
             {/* Team Logo Badge */}
             <div className="flex items-center gap-1.5 mb-1 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10 z-20">
-              <img src={awayMeta.logo} alt={awayMeta.name} className="w-3.5 h-3.5 object-contain" />
+              <img src={awayLogo} alt={awayTeamName} className="w-3.5 h-3.5 object-contain" />
               <span className="text-[10px] font-mono font-bold text-white">{awayStar.team}</span>
             </div>
 
@@ -250,7 +356,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
               />
               {/* Star Player Name Pill */}
               <div className="absolute -bottom-1.5 left-0 bg-slate-950/90 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 truncate max-w-[120px]">
-                {awayStar.shortName} <span className="text-cyan-400 font-mono text-[9px]">{awayStar.ppg}p</span>
+                {awayStar.shortName} <span className="text-cyan-400 font-mono text-[9px]">{awayStar.stat}</span>
               </div>
             </div>
           </div>
@@ -272,7 +378,7 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
             {/* Team Logo Badge */}
             <div className="flex items-center gap-1.5 mb-1 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10 z-20">
               <span className="text-[10px] font-mono font-bold text-white">{homeStar.team}</span>
-              <img src={homeMeta.logo} alt={homeMeta.name} className="w-3.5 h-3.5 object-contain" />
+              <img src={homeLogo} alt={homeTeamName} className="w-3.5 h-3.5 object-contain" />
             </div>
 
             {/* Real ESPN Player Headshot */}
@@ -285,23 +391,23 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
               />
               {/* Star Player Name Pill */}
               <div className="absolute -bottom-1.5 right-0 bg-slate-950/90 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 truncate max-w-[120px] text-right">
-                {homeStar.shortName} <span className="text-cyan-400 font-mono text-[9px]">{homeStar.ppg}p</span>
+                {homeStar.shortName} <span className="text-cyan-400 font-mono text-[9px]">{homeStar.stat}</span>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        /* Non-matchup Guide: Feature marquee NBA superstar headshot */
+        /* Non-matchup Guide */
         <div className="absolute inset-0 flex items-center justify-center p-3 z-10">
           <div className="flex items-center gap-4 bg-slate-950/80 backdrop-blur-md p-2.5 rounded-2xl border border-cyan-500/30">
             <img
-              src={article.articleType === 'PLAYER_ANALYSIS' ? NBA_STAR_PLAYERS['SAS'].headshotUrl : NBA_STAR_PLAYERS['BOS'].headshotUrl}
-              alt="NBA Star"
+              src={isNHL ? NHL_STAR_PLAYERS['EDM'].headshotUrl : NBA_STAR_PLAYERS['BOS'].headshotUrl}
+              alt="Star Player"
               className="w-14 h-14 object-contain rounded-xl bg-white/5 p-1"
             />
             <div className="text-left">
               <div className="text-[10px] font-mono font-bold text-cyan-400 uppercase">
-                {article.articleType === 'PLAYER_ANALYSIS' ? 'V. Wembanyama • Spurs' : 'J. Tatum • Celtics'}
+                {isNHL ? 'C. McDavid • Oilers' : 'J. Tatum • Celtics'}
               </div>
               <div className="text-xs font-bold text-white truncate max-w-[170px]">
                 {article.title}
@@ -312,7 +418,18 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
       )}
 
       {/* Bottom Model Conviction Pill */}
-      {modelCtx && (
+      {isNHL && nhlCtx ? (
+        <div className="absolute bottom-2 left-3 z-20">
+          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow-md flex items-center gap-1 ${
+            nhlCtx.pickType === 'OVER'
+              ? 'bg-emerald-500 text-slate-950'
+              : 'bg-amber-400 text-slate-950'
+          }`}>
+            {nhlCtx.pickType} {nhlCtx.sportsbookTotal}
+            <span className="opacity-80">({nhlCtx.goalEdge > 0 ? `+${nhlCtx.goalEdge.toFixed(2)}` : nhlCtx.goalEdge.toFixed(2)})</span>
+          </span>
+        </div>
+      ) : modelCtx ? (
         <div className="absolute bottom-2 left-3 z-20">
           <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow-md flex items-center gap-1 ${
             modelCtx.pickType === 'OVER'
@@ -323,7 +440,8 @@ export const ArticleImageBanner: React.FC<ArticleImageBannerProps> = ({
             <span className="opacity-80">({Math.abs(modelCtx.edgePoints) > 0 ? `+${Math.abs(modelCtx.edgePoints).toFixed(1)}` : '0.0'})</span>
           </span>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
+export default ArticleImageBanner;

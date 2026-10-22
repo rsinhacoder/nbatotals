@@ -48,14 +48,15 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
 
   // Update Dynamic SEO Head & Schema.org JSON-LD whenever article changes
   useEffect(() => {
+    const isNHL = article.sport === 'nhl';
     updateSEOHead({
-      title: `${article.title} — NBATotals.com`,
+      title: `${article.title} — ${isNHL ? 'NHLTotals.com' : 'NBATotals.com'}`,
       description: article.metaDescription,
       canonicalUrl: `https://nbatotals.com/previews/${article.slug}`,
       article,
       breadcrumbs: [
         { name: 'Home', url: '/' },
-        { name: 'NBA Previews & Editorial', url: '/?tab=previews' },
+        { name: isNHL ? 'NHL Previews & Analysis' : 'NBA Previews & Editorial', url: '/?tab=previews' },
         { name: article.title, url: `/previews/${article.slug}` },
       ],
     });
@@ -213,7 +214,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
           </div>
           <div className="flex items-center gap-1 text-[11px] text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-            <span>Verified 5-Season OLS Calibration</span>
+            <span>{article.sport === 'nhl' ? 'Verified 5-Season Poisson Calibration' : 'Verified 5-Season OLS Calibration'}</span>
           </div>
         </div>
       </header>
@@ -221,8 +222,136 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
       {/* Relatable Matchup & Action Hero Banner */}
       <ArticleImageBanner article={article} variant="detail" />
 
+      {/* NHL Quantitative Poisson Model Box */}
+      {article.nhlModelContext && (
+        <section aria-label="NHL Poisson Model Projection" className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-[#0a1124] to-indigo-950 text-white border border-indigo-500/30 shadow-xl space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-sm sm:text-base font-black tracking-wide uppercase text-cyan-300">
+                NHL Poisson Quantitative Model Box
+              </h2>
+            </div>
+            <div className="text-[11px] text-indigo-200/70 font-mono">
+              Formula: <span className="text-white font-bold">{article.nhlModelContext.formula || 'Bivariate Poisson (5-Yr) + Goalie GSAx/60'}</span>
+            </div>
+          </div>
+
+          {/* Core Numbers Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+              <span className="text-[11px] text-indigo-200/70 uppercase tracking-wider block font-semibold">
+                Consensus Total
+              </span>
+              <div className="text-xl sm:text-2xl font-black text-white mt-0.5">
+                {article.nhlModelContext.sportsbookTotal.toFixed(1)}
+              </div>
+              <span className="text-[10px] text-indigo-300/60 block mt-0.5">DraftKings / Pinnacle</span>
+            </div>
+
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+              <span className="text-[11px] text-cyan-300/80 uppercase tracking-wider block font-semibold">
+                Poisson Expected (xG)
+              </span>
+              <div className="text-xl sm:text-2xl font-black text-cyan-300 mt-0.5">
+                {article.nhlModelContext.modelProjectedTotal.toFixed(2)}
+              </div>
+              <span className="text-[10px] text-cyan-200/60 block mt-0.5">Bivariate Poisson (5-Yr)</span>
+            </div>
+
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+              <span className="text-[11px] text-indigo-200/70 uppercase tracking-wider block font-semibold">
+                Calculated Edge
+              </span>
+              <div className={`text-xl sm:text-2xl font-black mt-0.5 ${
+                Math.abs(article.nhlModelContext.goalEdge) >= 0.35 ? 'text-emerald-400' : 'text-amber-300'
+              }`}>
+                {article.nhlModelContext.goalEdge > 0 ? `+${article.nhlModelContext.goalEdge.toFixed(2)}` : article.nhlModelContext.goalEdge.toFixed(2)} g
+              </div>
+              <span className="text-[10px] text-indigo-200/60 block mt-0.5">
+                {article.nhlModelContext.confidenceScore}% confidence
+              </span>
+            </div>
+
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+              <span className="text-[11px] text-indigo-200/70 uppercase tracking-wider block font-semibold">
+                Recommendation
+              </span>
+              <div className="mt-0.5">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-black ${
+                  article.nhlModelContext.pickType === 'OVER'
+                    ? 'bg-emerald-500 text-slate-950'
+                    : article.nhlModelContext.pickType === 'UNDER'
+                    ? 'bg-amber-400 text-slate-950'
+                    : 'bg-slate-700 text-white'
+                }`}>
+                  {article.nhlModelContext.pickType === 'OVER' && <TrendingUp className="w-3.5 h-3.5" />}
+                  {article.nhlModelContext.pickType === 'UNDER' && <TrendingDown className="w-3.5 h-3.5" />}
+                  {article.nhlModelContext.pickType} {article.nhlModelContext.sportsbookTotal.toFixed(1)}
+                </span>
+              </div>
+              <span className="text-[10px] text-indigo-200/60 block mt-1 truncate">
+                Puckline: {article.nhlModelContext.puckline > 0 ? `+${article.nhlModelContext.puckline}` : article.nhlModelContext.puckline} ({article.nhlModelContext.pucklineHomeOdds || '-110'})
+              </span>
+            </div>
+          </div>
+
+          {/* Goalie Matchup Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono text-cyan-300 font-bold uppercase block">Away Starting Netminder</span>
+                <span className="text-sm font-bold text-white">{article.nhlModelContext.awayGoalie.name}</span>
+              </div>
+              <div className="text-right font-mono text-xs">
+                <span className="text-slate-300 block">SV%: <strong className="text-white">{(article.nhlModelContext.awayGoalie.savePct * 100).toFixed(1)}%</strong></span>
+                <span className="text-cyan-400 text-[11px]">GSAx/60: {article.nhlModelContext.awayGoalie.gsax60 >= 0 ? `+${article.nhlModelContext.awayGoalie.gsax60.toFixed(2)}` : article.nhlModelContext.awayGoalie.gsax60.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono text-cyan-300 font-bold uppercase block">Home Starting Netminder</span>
+                <span className="text-sm font-bold text-white">{article.nhlModelContext.homeGoalie.name}</span>
+              </div>
+              <div className="text-right font-mono text-xs">
+                <span className="text-slate-300 block">SV%: <strong className="text-white">{(article.nhlModelContext.homeGoalie.savePct * 100).toFixed(1)}%</strong></span>
+                <span className="text-cyan-400 text-[11px]">GSAx/60: {article.nhlModelContext.homeGoalie.gsax60 >= 0 ? `+${article.nhlModelContext.homeGoalie.gsax60.toFixed(2)}` : article.nhlModelContext.homeGoalie.gsax60.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive CTAs */}
+          <div className="pt-2 flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => handleCtaClick('nhl-picks', 'Model Box - View Live Line', article.gameId)}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md hover:shadow-lg flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>View Live Line on NHL Edge Board</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
+
+            <button
+              onClick={() => handleCtaClick('nhl-analyzer', 'Model Box - NHL Matchup Analyzer')}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-white transition-all border border-white/15 flex items-center gap-1.5 cursor-pointer"
+            >
+              <BarChart3 className="w-3 h-3 text-cyan-300" />
+              <span>Simulate Matchup in NHL Analyzer</span>
+            </button>
+
+            <button
+              onClick={() => handleCtaClick('nhl-stats', 'Model Box - 5-Season NHL Study')}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600/30 hover:bg-cyan-600/40 text-cyan-200 border border-cyan-400/30 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Activity className="w-3 h-3 text-cyan-300" />
+              <span>5-Season Poisson Study (6,115 Games)</span>
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* Model Box: Quantitative Forecast Card (Featured prominently above fold) */}
-      {modelCtx && (
+      {!article.nhlModelContext && modelCtx && (
         <section aria-label="Quantitative Model Projection" className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-[#0d1424] to-blue-950 text-white border border-blue-500/30 shadow-xl space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
             <div className="flex items-center gap-2">
@@ -511,7 +640,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
 
             {/* Disclaimer & Model Integrity */}
             <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
-              <strong>Sports Analytics Disclaimer:</strong> All model projections, pace calculations, and edges presented by NBATotals.com are quantitative estimates calibrated across 6,000 completed NBA games (2020–2025). We do not guarantee wagering outcomes. Always practice responsible bankroll management and shop for the best available lines across regulated sportsbooks.
+              <strong>Sports Analytics Disclaimer:</strong> All model projections, {article.sport === 'nhl' ? 'expected goal (xG) calculations' : 'pace calculations'}, and edges presented by {article.sport === 'nhl' ? 'NHLTotals.com' : 'NBATotals.com'} are quantitative estimates calibrated across {article.sport === 'nhl' ? '6,115 completed NHL games (2020–2025)' : '6,000 completed NBA games (2020–2025)'}. We do not guarantee wagering outcomes. Always practice responsible bankroll management and shop for the best available lines across regulated sportsbooks.
             </div>
           </footer>
         </div>
@@ -564,37 +693,74 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               Interactive Tools
             </div>
             <p className="text-xs text-slate-600 dark:text-zinc-300 leading-normal">
-              Compare this matchup with our 6,000-game empirical database and adjust pace assumptions in real time.
+              {article.sport === 'nhl'
+                ? 'Compare this matchup with our 6,115-game empirical Poisson database and analyze goal edges in real time.'
+                : 'Compare this matchup with our 6,000-game empirical database and adjust pace assumptions in real time.'}
             </p>
             <div className="space-y-2 pt-1">
-              <button
-                onClick={() => handleCtaClick('picks', 'Sidebar - Picks Board', article.gameId)}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
-              >
-                <span>Live Picks Board</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => handleCtaClick('analyzer', 'Sidebar - Matchup Analyzer')}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
-              >
-                <span>Matchup Analyzer</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => handleCtaClick('player-props', 'Sidebar - Player Props')}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
-              >
-                <span>Player Props Scanner</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                onClick={() => handleCtaClick('academy', 'Sidebar - Strategy Academy')}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
-              >
-                <span>Rule of 47 Academy</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
+              {article.sport === 'nhl' ? (
+                <>
+                  <button
+                    onClick={() => handleCtaClick('nhl-picks', 'Sidebar - NHL Picks', article.gameId)}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>NHL Edge Board</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                  <button
+                    onClick={() => handleCtaClick('nhl-analyzer', 'Sidebar - NHL Analyzer')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>NHL Matchup Analyzer</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                  <button
+                    onClick={() => handleCtaClick('nhl-stats', 'Sidebar - NHL Stats')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>5-Season Poisson Study</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                  <button
+                    onClick={() => handleCtaClick('academy', 'Sidebar - Strategy Academy')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>Strategy Academy</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleCtaClick('picks', 'Sidebar - Picks Board', article.gameId)}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>Live Picks Board</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                  <button
+                    onClick={() => handleCtaClick('analyzer', 'Sidebar - Matchup Analyzer')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>Matchup Analyzer</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                  <button
+                    onClick={() => handleCtaClick('player-props', 'Sidebar - Player Props')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>Player Props Scanner</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                  <button
+                    onClick={() => handleCtaClick('academy', 'Sidebar - Strategy Academy')}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-slate-700 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>Rule of 47 Academy</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

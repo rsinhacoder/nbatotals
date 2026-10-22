@@ -24,7 +24,6 @@ import { AnalyticsDashboardTab } from './components/AnalyticsDashboardTab';
 import { PreviewsHubTab } from './components/content/PreviewsHubTab';
 import { ArticleDetailPage } from './components/content/ArticleDetailPage';
 import { ContentPerformanceTab } from './components/content/ContentPerformanceTab';
-import { FootballThrowInScannerTab } from './components/football/FootballThrowInScannerTab';
 import { nbaContentEngine } from './services/nbaContentEngine';
 import type { NBAArticle } from './types/content';
 import { analytics } from './utils/analytics';
@@ -57,11 +56,6 @@ import { NHLMatchupAnalyzerTab } from './components/nhl/NHLMatchupAnalyzerTab';
 import { NHLHistoricalStatsTab } from './components/nhl/NHLHistoricalStatsTab';
 import { fetchLiveUpcomingNHLSchedule, getCuratedUpcomingNHLMatches } from './utils/nhlEspnApi';
 import type { NHLUpcomingMatch, NHLMarketEdge } from './types/nhl';
-import { KHLPicksBoardTab } from './components/khl/KHLPicksBoardTab';
-import { KHLMatchupAnalyzerTab } from './components/khl/KHLMatchupAnalyzerTab';
-import { KHLHistoricalStatsTab } from './components/khl/KHLHistoricalStatsTab';
-import { getCuratedUpcomingKHLMatches } from './utils/khlScheduleApi';
-import type { KHLUpcomingMatch, KHLMarketEdge } from './types/khl';
 import {
   fetchAndGradeAllRecentGameResults,
   gradeCompletedNBAGame,
@@ -78,9 +72,8 @@ const STORAGE_KEY_REFERENCES = 'nba_quant_references_v4';
 const STORAGE_KEY_UPCOMING = 'nba_quant_upcoming_v5';
 const STORAGE_KEY_MODEL = 'nba_quant_model_v2';
 const STORAGE_KEY_BETS = 'nba_quant_bets_v2';
-const STORAGE_KEY_SPORT = 'quant_selected_sport_v1';
+const STORAGE_KEY_SPORT = 'quant_selected_sport_v2';
 const STORAGE_KEY_NHL_UPCOMING = 'nhl_quant_upcoming_v1';
-const STORAGE_KEY_KHL_UPCOMING = 'khl_quant_upcoming_v1';
 const STORAGE_KEY_2026_PICKS = 'nba_quant_graded_picks_2026_27_v5';
 
 export function App() {
@@ -150,16 +143,12 @@ export function App() {
       academy: 'Quantitative Strategy Academy — Rule of 47 Pace Floor Guide',
       analytics: 'Google Analytics 4 & Engagement Dashboard — NBATotals.com QA',
       previews: selectedArticle
-        ? `${selectedArticle.title} — NBATotals.com`
-        : 'NBA Game Previews, Over/Under Predictions & Statistical Analysis — NBATotals.com',
+        ? `${selectedArticle.title} — ${selectedArticle.sport === 'nhl' ? 'NHLTotals.com' : 'NBATotals.com'}`
+        : 'NBA & NHL Game Previews, Over/Under Predictions & Quantitative Analysis — NBATotals.com',
       'content-perf': 'NBA Content Performance & Technical SEO Dashboard — NBATotals.com',
       'nhl-picks': 'NHL Edge Board — Quantitative Hockey Totals Predictions',
       'nhl-analyzer': 'NHL Matchup Analyzer — Team Pace & Totals Simulator',
       'nhl-stats': 'NHL 5-Season Historical Study — 6,115 Completed Games',
-      'khl-picks': 'KHL Edge Board — Kontinental Hockey League Totals',
-      'khl-analyzer': 'KHL Matchup Analyzer — Continental Hockey Forecaster',
-      'khl-stats': 'KHL 5-Season Historical Study — Empirical Totals Dataset',
-      'football-throw-ins': 'Football Throw-In Edge Scanner — Under 40.5 Predictions & Analysis — NBATotals.com',
     };
 
     const newTitle = titles[activeTab] || 'NBA Totals — Quantitative Sports Analytics';
@@ -358,32 +347,26 @@ export function App() {
     lowestQ: 41.5,
   });
 
-  // Selected Sport: 'nba' | 'nhl' | 'khl' | 'football'
-  const [currentSport, setCurrentSport] = useState<'nba' | 'nhl' | 'khl' | 'football'>(() => {
+  // Selected Sport: 'nba' | 'nhl'
+  const [currentSport, setCurrentSport] = useState<'nba' | 'nhl'>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_SPORT);
-      if (saved === 'nba' || saved === 'nhl' || saved === 'khl' || saved === 'football') return saved;
+      if (saved === 'nhl') return 'nhl';
     } catch (e) {}
     return 'nba';
   });
 
-  const handleSelectSport = (sport: 'nba' | 'nhl' | 'khl' | 'football') => {
+  const handleSelectSport = (sport: 'nba' | 'nhl') => {
     setCurrentSport(sport);
     try {
       localStorage.setItem(STORAGE_KEY_SPORT, sport);
     } catch (e) {}
-    if (sport === 'football') {
-      setActiveTab('football-throw-ins');
-    } else if (sport === 'khl') {
-      if (!activeTab.startsWith('khl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
-        setActiveTab('khl-picks');
-      }
-    } else if (sport === 'nhl') {
-      if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results') {
+    if (sport === 'nhl') {
+      if (!activeTab.startsWith('nhl-') && activeTab !== 'tracker' && activeTab !== 'academy' && activeTab !== 'results' && activeTab !== 'previews') {
         setActiveTab('nhl-picks');
       }
     } else {
-      if (activeTab.startsWith('nhl-') || activeTab.startsWith('khl-') || activeTab === 'football-throw-ins') {
+      if (activeTab.startsWith('nhl-')) {
         setActiveTab('previews');
       }
     }
@@ -468,81 +451,6 @@ export function App() {
       line: match.sportsbookTotal,
     });
     setActiveTab('nhl-analyzer');
-  };
-
-  // KHL Upcoming Games state
-  const [khlUpcomingMatches, setKhlUpcomingMatches] = useState<KHLUpcomingMatch[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_KHL_UPCOMING);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return getCuratedUpcomingKHLMatches();
-  });
-
-  const [isSyncingKHL, setIsSyncingKHL] = useState(false);
-
-  // Preloaded matchup for KHL Matchup Analyzer
-  const [khlAnalyzerPreload, setKhlAnalyzerPreload] = useState<{
-    away: string;
-    home: string;
-    line: number;
-  }>({
-    away: 'SKA',
-    home: 'CSK',
-    line: 5.0,
-  });
-
-  const handleRefreshKHLSchedule = async (showToast: boolean = true) => {
-    setIsSyncingKHL(true);
-    try {
-      const slate = getCuratedUpcomingKHLMatches();
-      setKhlUpcomingMatches(slate);
-      try {
-        localStorage.setItem(STORAGE_KEY_KHL_UPCOMING, JSON.stringify(slate));
-      } catch (e) {}
-      if (showToast) {
-        addToast('KHL Slate Refreshed', `Updated ${slate.length} KHL games & consensus lines`, 'success');
-      }
-    } catch (e) {
-      if (showToast) {
-        addToast('Verified KHL Slate Active', 'Using curated continental schedule', 'info');
-      }
-    } finally {
-      setIsSyncingKHL(false);
-    }
-  };
-
-  const handleTrackKHLBet = (match: KHLUpcomingMatch, market: KHLMarketEdge) => {
-    const newBet: TrackedBet = {
-      id: `bet_khl_${Date.now()}`,
-      matchId: match.id,
-      date: match.date,
-      matchup: `${match.awayAbbrev} @ ${match.homeAbbrev}`,
-      pickType: market.marketName,
-      targetLine: match.sportsbookTotal,
-      modelProjection: match.modelProjectedTotal,
-      edge: market.edgePercent,
-      units: market.edgePercent >= 5.0 ? 2.0 : 1.0,
-      odds: market.sportsbookOdds,
-      status: 'PENDING',
-      notes: `KHL Quantitative Edge: ${market.marketName} (+${market.edgePercent}% EV)`,
-      timestamp: new Date().toISOString(),
-      sport: 'KHL',
-    };
-    setTrackedBets((prev) => [newBet, ...prev]);
-    addToast('Position Tracked', `${newBet.matchup} - ${newBet.pickType} (${newBet.odds})`, 'success');
-  };
-
-  const handleSendToKHLAnalyzer = (match: KHLUpcomingMatch) => {
-    setKhlAnalyzerPreload({
-      away: match.awayAbbrev,
-      home: match.homeAbbrev,
-      line: match.sportsbookTotal,
-    });
-    setActiveTab('khl-analyzer');
   };
 
   // Initialize Raw Historical Games (ensures full multi-season 6,000-game dataset)
@@ -1096,7 +1004,6 @@ export function App() {
         gameCount={processedGames.length}
         upcomingCount={upcomingMatches.length}
         nhlUpcomingCount={nhlUpcomingMatches.length}
-        khlUpcomingCount={khlUpcomingMatches.length}
         trackedBetsCount={trackedBets.filter((b) => b.status === 'PENDING').length}
         currentSeasonPicksCount={picks2026_27.length}
         seasonLabel={seasonLabel}
@@ -1107,7 +1014,7 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0">
-        {/* NBA Tab 1: Game Previews & Analytical Matchup Breakdowns (Primary Main Tab) */}
+        {/* NBA & NHL Game Previews & Analytical Matchup Breakdowns (Primary Main Tab) */}
         {activeTab === 'previews' && (
           selectedArticle ? (
             <ArticleDetailPage
@@ -1138,6 +1045,8 @@ export function App() {
           ) : (
             <PreviewsHubTab
               upcomingMatches={upcomingMatches}
+              nhlUpcomingMatches={nhlUpcomingMatches}
+              currentSport={currentSport}
               onSelectArticle={(art) => {
                 setSelectedArticle(art);
                 if (typeof window !== 'undefined') {
@@ -1184,7 +1093,7 @@ export function App() {
         {/* Universal Model Correctness & Performance Ledger (2024–25 Current Season) */}
         {activeTab === 'results' && (
           <ModelResultsTab
-            currentSport={currentSport === 'football' ? 'nba' : currentSport}
+            currentSport={currentSport}
             onSelectSport={(s) => handleSelectSport(s)}
             historicalGames={processedGames}
             picks2026_27={picks2026_27}
@@ -1236,33 +1145,6 @@ export function App() {
         {/* NHL Tab 3: NHL 5-Season Historical Study & Backtest */}
         {activeTab === 'nhl-stats' && (
           <NHLHistoricalStatsTab />
-        )}
-
-        {/* KHL Tab 1: KHL Picks & Edge Board */}
-        {activeTab === 'khl-picks' && (
-          <KHLPicksBoardTab
-            upcomingMatches={khlUpcomingMatches}
-            onTrackBet={handleTrackKHLBet}
-            onSendToAnalyzer={handleSendToKHLAnalyzer}
-            onRefreshSchedule={() => handleRefreshKHLSchedule(true)}
-            isSyncingSchedule={isSyncingKHL}
-          />
-        )}
-
-        {/* KHL Tab 2: KHL Matchup Analyzer */}
-        {activeTab === 'khl-analyzer' && (
-          <KHLMatchupAnalyzerTab
-            key={`${khlAnalyzerPreload.away}-${khlAnalyzerPreload.home}-${khlAnalyzerPreload.line}`}
-            initialAway={khlAnalyzerPreload.away}
-            initialHome={khlAnalyzerPreload.home}
-            initialLine={khlAnalyzerPreload.line}
-            onTrackBet={handleAddNewCustomBet}
-          />
-        )}
-
-        {/* KHL Tab 3: KHL 5-Season Historical Study */}
-        {activeTab === 'khl-stats' && (
-          <KHLHistoricalStatsTab />
         )}
 
         {/* Shared Tab: Bet Tracker (NBA & NHL) */}
@@ -1322,11 +1204,6 @@ export function App() {
               setActiveTab(tab);
             }}
           />
-        )}
-
-        {/* Football Tab: Throw-In Edge Scanner Under 40.5 */}
-        {activeTab === 'football-throw-ins' && (
-          <FootballThrowInScannerTab />
         )}
       </main>
 
@@ -1421,17 +1298,17 @@ export function App() {
                 </li>
                 <li>
                   <button onClick={() => { setActiveTab('previews'); setSelectedArticle(null); }} className="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
-                    NBA Game Previews &amp; Analysis
+                    NBA &amp; NHL Game Previews &amp; Analysis
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => { setActiveTab('nhl-picks'); handleSelectSport('nhl'); }} className="hover:text-indigo-400 cursor-pointer font-bold text-indigo-400">
+                    🏒 NHL Poisson Edge Board &amp; Over/Under
                   </button>
                 </li>
                 <li>
                   <button onClick={() => setActiveTab('analytics')} className="hover:text-blue-600 dark:hover:text-cyan-400 cursor-pointer font-semibold text-cyan-500">
                     GA4 &amp; Engagement Dashboard
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveTab('football-throw-ins'); handleSelectSport('football'); }} className="hover:text-emerald-400 cursor-pointer font-bold text-emerald-500">
-                    ⚽ Football Throw-Ins Under 40.5 Scanner
                   </button>
                 </li>
                 <li>
