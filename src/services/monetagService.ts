@@ -4,6 +4,7 @@ import { isNativePlatform } from '../utils/capacitorApp';
 interface MonetagServiceState {
   initialized: boolean;
   isLoaded: boolean;
+  serviceWorkerRegistered: boolean;
   isNativeSuppressed: boolean;
   error: string | null;
 }
@@ -13,12 +14,13 @@ class MonetagService {
   private state: MonetagServiceState = {
     initialized: false,
     isLoaded: false,
+    serviceWorkerRegistered: false,
     isNativeSuppressed: false,
     error: null,
   };
 
   /**
-   * Initializes the Monetag MultiTag script and verification tags.
+   * Initializes the Monetag script, service worker registration, and verification tags.
    * Automatically bypasses inside native Capacitor Android builds to ensure
    * 100% compliance with Google Play Store policies.
    */
@@ -44,7 +46,7 @@ class MonetagService {
     if (!this.config.enabled) {
       if (this.config.debug) {
         console.info(
-          '[Monetag] Monetag is currently disabled. Set `enabled: true` and paste your zoneId in `src/config/monetagConfig.ts` to activate live ads.'
+          '[Monetag] Monetag is currently disabled. Set `enabled: true` in `src/config/monetagConfig.ts` to activate live ads.'
         );
       }
       return;
@@ -58,8 +60,40 @@ class MonetagService {
     // 3. Inject Verification Meta Tag if provided
     this.injectVerificationMeta();
 
-    // 4. Inject MultiTag Script
-    this.injectMultiTagScript();
+    // 4. Register Monetag Service Worker (/sw.js)
+    this.registerServiceWorker();
+
+    // 5. Inject Monetag Zone Script
+    this.injectZoneScript();
+  }
+
+  /**
+   * Registers the Monetag Service Worker (/sw.js) for Web Push / In-Page Push notifications
+   */
+  private registerServiceWorker(): void {
+    const swPath = this.config.serviceWorkerPath || '/sw.js';
+
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        navigator.serviceWorker
+          .register(swPath)
+          .then((registration) => {
+            this.state.serviceWorkerRegistered = true;
+            if (this.config.debug) {
+              console.info(`[Monetag] Service worker registered successfully at ${swPath} (scope: ${registration.scope})`);
+            }
+          })
+          .catch((err) => {
+            if (this.config.debug) {
+              console.warn('[Monetag] Service worker registration error:', err);
+            }
+          });
+      } catch (e) {
+        if (this.config.debug) {
+          console.warn('[Monetag] Failed to register service worker:', e);
+        }
+      }
+    }
   }
 
   /**
@@ -88,16 +122,14 @@ class MonetagService {
   }
 
   /**
-   * Injects the official Monetag MultiTag script
+   * Injects the Monetag Zone script tag
    */
-  private injectMultiTagScript(): void {
+  private injectZoneScript(): void {
     const zoneId = this.config.zoneId?.trim();
     const scriptUrl = this.config.scriptUrl?.trim();
 
     if (!zoneId) {
-      console.warn(
-        '[Monetag] Monetag is enabled, but no `zoneId` was provided in `src/config/monetagConfig.ts`. Please paste your MultiTag Zone ID.'
-      );
+      console.warn('[Monetag] Monetag is enabled, but no `zoneId` was provided in `src/config/monetagConfig.ts`.');
       return;
     }
 
@@ -108,7 +140,10 @@ class MonetagService {
 
     try {
       // Check if already injected
-      const existingScript = document.querySelector(`script[data-zone="${zoneId}"]`);
+      const existingScript =
+        document.querySelector(`script[data-zone="${zoneId}"]`) ||
+        document.querySelector(`script[src*="${zoneId}"]`);
+
       if (existingScript) {
         this.state.isLoaded = true;
         return;
@@ -123,14 +158,14 @@ class MonetagService {
       script.onload = () => {
         this.state.isLoaded = true;
         if (this.config.debug) {
-          console.info(`[Monetag] MultiTag loaded successfully for Zone ID: ${zoneId}`);
+          console.info(`[Monetag] Zone script loaded successfully for Zone ID: ${zoneId}`);
         }
       };
 
       script.onerror = () => {
         this.state.error = 'Monetag script failed to load (possible adblocker active).';
         if (this.config.debug) {
-          console.warn('[Monetag] MultiTag blocked or failed to load.');
+          console.warn('[Monetag] Script blocked or failed to load.');
         }
       };
 
@@ -151,9 +186,6 @@ class MonetagService {
     if (this.config.debug) {
       console.debug(`[Monetag] Navigation event to: ${route}`);
     }
-
-    // Monetag MultiTag automatically hooks clicks on DOM elements,
-    // but custom hooks or direct links can be triggered here if configured.
   }
 
   /**
@@ -166,11 +198,12 @@ class MonetagService {
   /**
    * Diagnostic state of the Monetag integration
    */
-  public getStatus(): MonetagServiceState & { enabled: boolean; zoneId: string } {
+  public getStatus(): MonetagServiceState & { enabled: boolean; zoneId: string; domain: string } {
     return {
       ...this.state,
       enabled: this.config.enabled,
       zoneId: this.config.zoneId,
+      domain: this.config.domain,
     };
   }
 }
