@@ -19,7 +19,7 @@ export async function initializeNativeAndroid(onHardwareBack?: () => boolean): P
 
   try {
     // Suppress external web ads in native APK to protect Google Play store compliance
-    const monetagTag = document.getElementById('monetag-tag');
+    const monetagTag = document.querySelector('script[src*="quge5.com"], script[data-zone="300097"]');
     if (monetagTag) {
       monetagTag.remove();
     }
