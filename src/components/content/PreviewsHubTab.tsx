@@ -202,8 +202,8 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
           />
         </div>
 
-        {/* Sport Switcher Toggle + Category Pills */}
-        <div className="flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar pb-1 md:pb-0">
+        {/* Sport Switcher Toggle + Category Pills (Horizontally scrollable on mobile) */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap py-1 w-full shrink-0">
           {/* Sport Filter Pills */}
           <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-[#141b2a] border border-slate-200 dark:border-[#222c42] shrink-0 text-xs font-bold mr-2">
             <button
@@ -281,18 +281,18 @@ export const PreviewsHubTab: React.FC<PreviewsHubTabProps> = ({
           {/* Featured Details */}
           <div className="lg:w-1/2 p-6 sm:p-8 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
-              <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 font-mono">
+                <span className="flex items-center gap-1 whitespace-nowrap shrink-0">
+                  <Calendar className="w-3.5 h-3.5 text-blue-500" />
                   {nbaDateService.formatScheduleDateLabel(featuredArticle.publishedAt.slice(0, 10))}
                 </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-slate-600">•</span>
+                <span className="flex items-center gap-1 whitespace-nowrap shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
                   {featuredArticle.readingTimeMinutes} min read
                 </span>
-                <span>•</span>
-                <span>{featuredArticle.wordCount} words</span>
+                <span className="hidden sm:inline text-slate-600">•</span>
+                <span className="whitespace-nowrap shrink-0 text-slate-500">{featuredArticle.wordCount} words</span>
               </div>
 
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white group-hover:text-blue-500 transition leading-snug">

@@ -165,11 +165,11 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
       <header className="space-y-4">
         {/* Category & Badge */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20">
+          <span className="px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-blue-500/10 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300 border border-blue-500/20 whitespace-nowrap shrink-0">
             {article.articleType.replace('_', ' ')}
           </span>
           {modelCtx && (
-            <span className={`px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-xs border ${
+            <span className={`px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-xs border whitespace-nowrap shrink-0 ${
               modelCtx.pickType === 'OVER'
                 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25'
                 : modelCtx.pickType === 'UNDER'
@@ -180,13 +180,13 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
             </span>
           )}
           <span className="text-slate-400 dark:text-zinc-500">•</span>
-          <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400">
-            <Clock className="w-3 h-3" />
+          <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400 whitespace-nowrap shrink-0">
+            <Clock className="w-3 h-3 text-cyan-400" />
             {article.readingTimeMinutes} min read
           </span>
           <span className="text-slate-400 dark:text-zinc-500">•</span>
-          <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400">
-            <Calendar className="w-3 h-3" />
+          <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400 whitespace-nowrap shrink-0">
+            <Calendar className="w-3 h-3 text-blue-500" />
             {article.publishedAt.slice(0, 10)}
           </span>
         </div>
@@ -212,9 +212,10 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               <span className="block text-[11px] text-slate-400">Role: {article.author.role}</span>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-slate-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-            <span>{article.sport === 'nhl' ? 'Verified 5-Season Poisson Calibration' : 'Verified 5-Season OLS Calibration'}</span>
+          <div className="flex items-center gap-1 text-[11px] text-slate-400 shrink-0">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <span className="hidden sm:inline">{article.sport === 'nhl' ? 'Verified 5-Season Poisson Calibration' : 'Verified 5-Season OLS Calibration'}</span>
+            <span className="sm:hidden font-mono font-bold text-slate-300">{article.sport === 'nhl' ? '5-Yr Poisson' : '5-Yr OLS'}</span>
           </div>
         </div>
       </header>
