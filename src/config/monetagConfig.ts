@@ -62,13 +62,13 @@ export const MONETAG_CONFIG: MonetagConfig = {
   verificationCode: '',
 
   // Your Monetag Zone ID
-  zoneId: '12093878',
+  zoneId: '300097',
 
   // Your Monetag CDN Domain
-  domain: '3nbf4.com',
+  domain: 'quge5.com',
 
   // Monetag Zone tag script
-  scriptUrl: 'https://3nbf4.com/pfe/current/tag.min.js?z=12093878',
+  scriptUrl: 'https://quge5.com/88/tag.min.js',
 
   // Path to service worker in public root
   serviceWorkerPath: '/sw.js',
