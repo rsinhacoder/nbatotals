@@ -18,6 +18,7 @@ import {
 } from './components/LegalModals';
 import { MobileAppContainer } from './components/mobile/MobileAppContainer';
 import { isNativePlatform } from './utils/capacitorApp';
+import { monetagService } from './services/monetagService';
 import { nbaRosterService } from './services/nbaRosterService';
 import { DEFAULT_OPENING_CONSENSUS_MARKETS } from './services/sportsbookOddsService';
 import { AnalyticsDashboardTab } from './components/AnalyticsDashboardTab';
@@ -160,6 +161,9 @@ export function App() {
       newTitle,
       activeTab
     );
+
+    // Notify Monetag of navigation event
+    monetagService.onNavigate(activeTab);
   }, [activeTab, selectedArticle]);
 
   // Handle browser back/forward buttons
@@ -308,6 +312,9 @@ export function App() {
   const [playerPropsForecasts, setPlayerPropsForecasts] = useState<PlayerPropsForecast[]>([]);
 
   useEffect(() => {
+    // Initialize Monetag Ad Network (only runs on web, safe for native mobile)
+    monetagService.init();
+
     nbaRosterService
       .generateScheduleDrivenRosters(nbaDateService.getTodayEasternDate(), DEFAULT_OPENING_CONSENSUS_MARKETS)
       .then((res) => setPlayerPropsForecasts(res.allForecasts))
