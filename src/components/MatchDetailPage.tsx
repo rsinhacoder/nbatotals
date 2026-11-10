@@ -20,7 +20,6 @@ import {
 import type { UpcomingMatch } from '../types/nba';
 import { getTeamProfile } from '../data/teamProfiles';
 import { fetchNBANews, type NBANewsArticle } from '../utils/espnApi';
-import { AdBanner } from './AdBanner';
 import { analytics } from '../utils/analytics';
 import { favoritesService } from '../utils/favoritesService';
 
@@ -543,11 +542,8 @@ export const MatchDetailPage: React.FC<MatchDetailPageProps> = ({
           </div>
         </div>
 
-        {/* Right Column (6 cols): Breaking Game News & Sponsored Revenue Ad */}
+        {/* Right Column (6 cols): Breaking Game News */}
         <div className="lg:col-span-6 space-y-4">
-          {/* Revenue Generation Box Ad */}
-          <AdBanner variant="box" />
-
           {/* Breaking News Feed */}
           <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">

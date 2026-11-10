@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ShieldCheck, FileText, Info, Mail, AlertTriangle, ExternalLink } from 'lucide-react';
+import { X, ShieldCheck, FileText, Info, Mail, AlertTriangle } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -43,26 +43,11 @@ export const PrivacyPolicyModal: React.FC<ModalProps> = ({ isOpen, onClose }) =>
           <section className="space-y-2 bg-blue-50/50 dark:bg-blue-950/30 p-3 sm:p-4 rounded-xl border border-blue-200/80 dark:border-blue-800/50">
             <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
               <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              2. Google AdSense &amp; Third-Party Advertising Cookies
+              2. Ad-Free Experience &amp; Zero Advertising Cookies
             </h3>
             <p>
-              We partner with third-party advertising companies, including <strong>Google AdSense</strong>, to display advertisements when you visit our website. These companies may use cookies, web beacons, and similar tracking technologies to serve ads based on your prior visits to this website and other websites across the Internet:
+              <strong>nbatotals.com operates completely ad-free.</strong> We do not display third-party advertisements, sponsored betting popups, or behavioral ad-targeting scripts, and we do not sell or share visitor browsing activity with advertising networks.
             </p>
-            <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>
-                <strong>Google&apos;s use of advertising cookies:</strong> Enables Google and its partner network to serve personalized ads to you based on your visit to nbatotals.com and/or other sites on the web.
-              </li>
-              <li>
-                <strong>Opt-out options:</strong> You may opt out of personalized advertising at any time by visiting{' '}
-                <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline inline-flex items-center gap-1 font-semibold">
-                  Google Ads Settings <ExternalLink className="h-3 w-3" />
-                </a>{' '}
-                or by visiting{' '}
-                <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline inline-flex items-center gap-1 font-semibold">
-                  AboutAds.info <ExternalLink className="h-3 w-3" />
-                </a>.
-              </li>
-            </ul>
           </section>
 
           <section className="space-y-2">

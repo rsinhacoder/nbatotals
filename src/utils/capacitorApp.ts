@@ -18,12 +18,6 @@ export async function initializeNativeAndroid(onHardwareBack?: () => boolean): P
   if (!Capacitor.isNativePlatform()) return;
 
   try {
-    // Suppress external web ads in native APK to protect Google Play store compliance
-    const monetagTag = document.querySelector('script[src*="quge5.com"], script[data-zone="300097"]');
-    if (monetagTag) {
-      monetagTag.remove();
-    }
-
     // 1. Status Bar styling (Android)
     if (Capacitor.isPluginAvailable('StatusBar')) {
       await StatusBar.setStyle({ style: Style.Dark });

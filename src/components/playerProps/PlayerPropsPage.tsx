@@ -36,7 +36,6 @@ import { FirstQuarterScannerView } from './FirstQuarterScannerView';
 import { PropsBacktestView } from './PropsBacktestView';
 import { PlayerDetailModal } from './PlayerDetailModal';
 import { OddsSettingsModal } from './OddsSettingsModal';
-import { AdBanner } from '../AdBanner';
 import { sportsbookOddsService } from '../../services/sportsbookOddsService';
 import { nbaRosterService } from '../../services/nbaRosterService';
 import type { TrackedBet, UpcomingMatch } from '../../types/nba';
@@ -962,9 +961,6 @@ export const PlayerPropsPage: React.FC<PlayerPropsPageProps> = ({
 
       {/* Model Backtest */}
       {subTab === 'backtest' && <PropsBacktestView />}
-
-      {/* AdBanner integration */}
-      <AdBanner variant="leaderboard" className="my-6" />
 
       {/* Modals */}
       <PlayerDetailModal

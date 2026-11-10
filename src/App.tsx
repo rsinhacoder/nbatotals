@@ -9,7 +9,6 @@ import { ModelResultsTab } from './components/ModelResultsTab';
 import { PlayerPropsPage } from './components/playerProps/PlayerPropsPage';
 import { SyncModal } from './components/SyncModal';
 import { ToastContainer, type ToastMessage } from './components/Toast';
-import { AdBanner } from './components/AdBanner';
 import {
   PrivacyPolicyModal,
   TermsOfServiceModal,
@@ -18,7 +17,6 @@ import {
 } from './components/LegalModals';
 import { MobileAppContainer } from './components/mobile/MobileAppContainer';
 import { isNativePlatform } from './utils/capacitorApp';
-import { monetagService } from './services/monetagService';
 import { nbaRosterService } from './services/nbaRosterService';
 import { DEFAULT_OPENING_CONSENSUS_MARKETS } from './services/sportsbookOddsService';
 import { AnalyticsDashboardTab } from './components/AnalyticsDashboardTab';
@@ -161,9 +159,6 @@ export function App() {
       newTitle,
       activeTab
     );
-
-    // Notify Monetag of navigation event
-    monetagService.onNavigate(activeTab);
   }, [activeTab, selectedArticle]);
 
   // Handle browser back/forward buttons
@@ -312,8 +307,17 @@ export function App() {
   const [playerPropsForecasts, setPlayerPropsForecasts] = useState<PlayerPropsForecast[]>([]);
 
   useEffect(() => {
-    // Initialize Monetag Ad Network (only runs on web, safe for native mobile)
-    monetagService.init();
+    // Unregister any leftover ad push service workers from returning visitors' browsers
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          for (const reg of registrations) {
+            reg.unregister().catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
 
     nbaRosterService
       .generateScheduleDrivenRosters(nbaDateService.getTodayEasternDate(), DEFAULT_OPENING_CONSENSUS_MARKETS)
@@ -1224,7 +1228,7 @@ export function App() {
         onSyncComplete={handleSyncComplete}
       />
 
-      {/* Legal & Compliance Modals for Google AdSense & Regulatory Compliance */}
+      {/* Legal & Compliance Modals */}
       <PrivacyPolicyModal
         isOpen={isPrivacyModalOpen}
         onClose={() => setIsPrivacyModalOpen(false)}
@@ -1243,9 +1247,9 @@ export function App() {
       />
 
       {/* SEO-Rich Production Footer */}
-      <footer className="border-t border-slate-200 dark:border-[#1c2438] bg-white dark:bg-[#0b0f19] pt-10 pb-16 text-xs text-slate-500 dark:text-zinc-500 mb-14 md:mb-0 shadow-xs transition-colors duration-200">
+      <footer className="border-t border-slate-200 dark:border-[#1c2438] bg-white dark:bg-[#0b0f19] pt-10 pb-12 text-xs text-slate-500 dark:text-zinc-500 shadow-xs transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Col 1: Brand & Model Overview */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -1255,7 +1259,7 @@ export function App() {
                 </span>
               </div>
               <p className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-400">
-                <strong>NBATotals.com</strong> is an advanced quantitative sports analytics engine specializing in daily NBA Over/Under predictions, totals line shopping, and pace regression. Calibrated across <strong>6,000 completed NBA games</strong> across 5 full seasons (2020–2025).
+                <strong>NBATotals.com</strong> is an independent, ad-free quantitative sports analytics engine specializing in daily NBA &amp; NHL Over/Under predictions, totals comparison, and pace regression. Calibrated across <strong>6,000 completed NBA games</strong> across 5 full seasons (2020–2025).
               </p>
               <div className="text-[11px] font-mono text-slate-600 dark:text-zinc-400 pt-1">
                 Active Model: <strong className="text-slate-800 dark:text-slate-200">{activeModel.name}</strong> • MAE: ±{activeModel.historicalMae.toFixed(2)} pts
@@ -1265,7 +1269,7 @@ export function App() {
             {/* Col 2: SEO Quick Links */}
             <div className="space-y-2">
               <div className="font-bold text-slate-900 dark:text-zinc-200 text-xs uppercase tracking-wider">
-                NBA Analytics &amp; Tools
+                NBA &amp; NHL Analytics
               </div>
               <ul className="space-y-1.5 text-[11px]">
                 <li>
@@ -1326,7 +1330,7 @@ export function App() {
               </ul>
             </div>
 
-            {/* Col 3: Legal & Regulatory (AdSense Mandatory) */}
+            {/* Col 3: Legal & Transparency */}
             <div className="space-y-2">
               <div className="font-bold text-slate-900 dark:text-zinc-200 text-xs uppercase tracking-wider">
                 Legal &amp; Transparency
@@ -1364,76 +1368,7 @@ export function App() {
                     Contact Support &amp; Editorial Team
                   </button>
                 </li>
-                <li>
-                  <a
-                    href="/ads.txt"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600 dark:hover:text-blue-400 font-mono text-[10px] inline-flex items-center gap-1"
-                  >
-                    Authorized Digital Sellers (ads.txt) ↗
-                  </a>
-                </li>
               </ul>
-            </div>
-
-            {/* Col 4: Official Sportsbook Partners */}
-            <div className="space-y-2">
-              <div className="font-bold text-slate-900 dark:text-zinc-200 text-xs uppercase tracking-wider">
-                Official Sportsbook Partners
-              </div>
-              <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-400">
-                <div>
-                  <a
-                    href="https://sportsbook.draftkings.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
-                  >
-                    DraftKings Sportsbook <span className="text-[11px] text-slate-400 font-mono">· Bet $5, Get $150</span>
-                  </a>
-                </div>
-                <div>
-                  <a
-                    href="https://sportsbook.fanduel.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
-                  >
-                    FanDuel Sportsbook <span className="text-[11px] text-slate-400 font-mono">· Bet $5, Get $150</span>
-                  </a>
-                </div>
-                <div>
-                  <a
-                    href="https://sports.betmgm.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
-                  >
-                    BetMGM Sportsbook <span className="text-[11px] text-slate-400 font-mono">· Up to $1,500 Back</span>
-                  </a>
-                </div>
-                <div>
-                  <a
-                    href="https://www.caesars.com/sportsbook-and-casino"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
-                  >
-                    Caesars Sportsbook <span className="text-[11px] text-slate-400 font-mono">· $1,000 First Bet</span>
-                  </a>
-                </div>
-                <div>
-                  <a
-                    href="https://www.bet365.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600 dark:hover:text-blue-400 font-medium"
-                  >
-                    bet365 Sportsbook <span className="text-[11px] text-slate-400 font-mono">· Bet $5, Get $150</span>
-                  </a>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -1459,14 +1394,11 @@ export function App() {
               </button>
             </div>
             <div className="text-center md:text-right text-[10px]">
-              21+ Only. Gamble Responsibly. Problem Gambling? Call <strong>1-800-GAMBLER</strong>.
+              100% Ad-Free Analytics • 21+ Only • Gamble Responsibly: <strong>1-800-GAMBLER</strong>.
             </div>
           </div>
         </div>
       </footer>
-
-      {/* Sticky High-Converting Sportsbook Promo / Disclaimer */}
-      <AdBanner variant="sticky-bottom" />
     </div>
   );
 }

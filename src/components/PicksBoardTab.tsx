@@ -21,7 +21,6 @@ import {
   Activity,
 } from 'lucide-react';
 import { MatchDetailPage } from './MatchDetailPage';
-import { AdBanner } from './AdBanner';
 import type { UpcomingMatch, TrackedBet } from '../types/nba';
 import { getTeamProfile } from '../data/teamProfiles';
 import { analytics } from '../utils/analytics';
@@ -272,10 +271,7 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 1. Optional Sleek Partner Odds Strip (Dismissible) */}
-      <AdBanner variant="leaderboard" />
-
-      {/* 2. Hero Authority Banner: Professional Quant Brand Anchor */}
+      {/* 1. Hero Authority Banner: Professional Quant Brand Anchor */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-[#0a1122] to-blue-950 border border-slate-800 text-white p-4 sm:p-6 shadow-md">
         {/* Ambient Glow Accents */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -602,14 +598,14 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
         )}
       </div>
 
-      {/* 3. Match Cards: Clickable with In-Feed Sponsored Revenue Unit */}
+      {/* 2. Match Cards */}
       {filteredMatches.length === 0 ? (
         <div className="bg-white dark:bg-[#0c1220] border border-slate-200/90 dark:border-[#1c2438] rounded-2xl p-8 text-center text-slate-500 dark:text-zinc-400 text-xs shadow-xs">
           No matches found for your current filter. Try selecting &quot;All&quot; or clearing your search.
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredMatches.map((match, index) => {
+          {filteredMatches.map((match) => {
             const away = getTeamProfile(match.awayTeam);
             const home = getTeamProfile(match.homeTeam);
 
@@ -625,11 +621,6 @@ export const PicksBoardTab: React.FC<PicksBoardTabProps> = ({
 
             return (
               <React.Fragment key={match.id}>
-                {/* In-feed native sponsored card: appear once after game 4 to avoid ad fatigue */}
-                {index === 3 && (
-                  <AdBanner variant="native-card" className="my-1.5" />
-                )}
-
                 <div
                   onClick={() => handleSelectGame(match)}
                   role="button"
